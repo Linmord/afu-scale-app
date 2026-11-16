@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "AFU 体脂秤",
+    "slug": "afu-scale-app",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#ffffff",
+      "image": "./assets/splash.png",
+      "resizeMode": "contain"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff",
+        "foregroundImage": "./assets/adaptive-icon.png"
+      },
+      "permissions": [
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_CONNECT",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "package": "com.afuscale.app"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "需要蓝牙连接体脂秤读取测量数据",
+        "NSBluetoothPeripheralUsageDescription": "需要蓝牙连接体脂秤读取测量数据"
+      }
+    },
+    "plugins": [
+      "react-native-ble-plx"
+    ]
+  }
+}
