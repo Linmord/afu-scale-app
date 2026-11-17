@@ -1,9 +1,27 @@
 node_modules/
 .expo/
 dist/
+web-build/
 *.log
 .DS_Store
+
+# 原生工程由 expo prebuild 生成，不入库
 android/
 ios/
+
+# 构建产物与下载
 apk/
+*.apk
+*.aab
+*.zip
+
+# 隐私：健康数据绝不入库
+server/received.jsonl
+*.jsonl
+data/
 _bundled.json
+_build_log.txt
+
+# Python 缓存
+__pycache__/
+*.pyc

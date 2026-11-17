@@ -15,7 +15,41 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 DEFAULT_OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "received.jsonl")
 
 lock = threading.Lock()
-seen_times = set()
+seen_keys = set()
+
+
+def load_seen(path):
+    """启动时把已落盘记录的 key 读进内存，避免服务重启后重复接收。"""
+    if not os.path.exists(path):
+        return
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    o = json.loads(line)
+                    k = _rec_key(o)
+                    if k:
+                        seen_keys.add(k)
+                except Exception:
+                    continue
+    except Exception:
+        pass
+
+
+def _rec_key(rec):
+    """去重键：优先用前端生成的唯一 id；老数据回退到 time+unit+weight。"""
+    if not isinstance(rec, dict):
+        return None
+    rid = rec.get("id")
+    if rid:
+        return "id:" + str(rid)
+    t = rec.get("time")
+    if t:
+        return "t:%s|%s|%s" % (t, rec.get("unit"), rec.get("weight_kg"))
+    return None
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -31,8 +65,27 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith("/ping"):
             self._send(200, json.dumps({"ok": True}).encode())
-        else:
-            self._send(404)
+            return
+        if self.path.startswith("/records"):
+            # 拉取远端已有记录，供手机端合并
+            try:
+                out = []
+                with lock:
+                    if os.path.exists(self.out_path):
+                        with open(self.out_path, encoding="utf-8") as f:
+                            for line in f:
+                                line = line.strip()
+                                if line:
+                                    try:
+                                        out.append(json.loads(line))
+                                    except Exception:
+                                        continue
+                body = json.dumps({"ok": True, "records": out, "count": len(out)}, ensure_ascii=False).encode()
+                self._send(200, body)
+            except Exception as e:
+                self._send(500, json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False).encode())
+            return
+        self._send(404)
 
     def do_POST(self):
         if self.path.startswith("/records"):
@@ -41,17 +94,22 @@ class Handler(BaseHTTPRequestHandler):
                 data = json.loads(self.rfile.read(length) or b"{}")
                 records = data.get("records", [])
                 received = 0
+                skipped = 0
                 with lock:
                     with open(self.out_path, "a", encoding="utf-8") as f:
                         for rec in records:
-                            key = rec.get("time")
-                            if key and key in seen_times:
+                            key = _rec_key(rec)
+                            if key and key in seen_keys:
+                                skipped += 1
                                 continue
                             if key:
-                                seen_times.add(key)
+                                seen_keys.add(key)
                             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
                             received += 1
-                self._send(200, json.dumps({"ok": True, "received": received}).encode())
+                print("[dedup] 新增 %d 条，跳过重复 %d 条" % (received, skipped))
+                self._send(200, json.dumps({
+                    "ok": True, "received": received, "skipped": skipped
+                }).encode())
             except Exception as e:
                 self._send(400, json.dumps({"ok": False, "error": str(e)}).encode())
         else:
@@ -68,6 +126,8 @@ def main():
     ap.add_argument("--out", default=DEFAULT_OUT)
     args = ap.parse_args()
     Handler.out_path = args.out
+    load_seen(args.out)
+    print("已装载历史去重键 %d 条" % len(seen_keys))
     httpd = ThreadingHTTPServer(("0.0.0.0", args.port), Handler)
     print("体脂秤接收服务已启动：http://0.0.0.0:%d" % args.port)
     print("接收文件：%s" % args.out)

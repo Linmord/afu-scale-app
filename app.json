@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "AFU 体脂秤",
-    "slug": "afu-scale-app",
-    "version": "0.1.0",
+    "name": "AFU",
+    "slug": "afu-scale",
+    "version": "0.1.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -17,24 +17,28 @@
         "foregroundImage": "./assets/adaptive-icon.png"
       },
       "permissions": [
-        "BLUETOOTH",
-        "BLUETOOTH_ADMIN",
         "BLUETOOTH_SCAN",
         "BLUETOOTH_CONNECT",
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "INTERNET"
       ],
-      "package": "com.afuscale.app"
+      "package": "com.aiyue.afuscale"
     },
     "ios": {
       "supportsTablet": true,
-      "infoPlist": {
-        "NSBluetoothAlwaysUsageDescription": "需要蓝牙连接体脂秤读取测量数据",
-        "NSBluetoothPeripheralUsageDescription": "需要蓝牙连接体脂秤读取测量数据"
-      }
+      "bundleIdentifier": "com.aiyue.afuscale"
     },
     "plugins": [
-      "react-native-ble-plx"
-    ]
+      "react-native-ble-plx",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
+    "newArchEnabled": true
   }
 }

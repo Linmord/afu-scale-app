@@ -1,39 +1,57 @@
 import { File, Directory, Paths } from 'expo-file-system';
 
 /**
- * 本地记录层：把测量结果追加到 JSONL 文件（SDK 54 File/Directory API）。
+ * 本地记录层 v3：
+ * - 默认单位「小林」
+ * - 记录含电极/阻抗等诊断字段
+ * - 支持删除单条记录
  */
 
 export interface MeasurementRecord {
+  id: string;                 // 唯一 id（时间戳+随机）
   time: string;
+  unit: string;
   weight_kg: number;
   impedance_1: number | null;
   impedance_2: number | null;
+  adcs?: number[] | null;     // 多频阻抗原始值
+  electrode_on?: boolean;     // 电极是否导通
+  alg_type?: number | null;
+  syncedAt?: string | null;   // 已推送到电脑的时间（null/undefined = 未推送）
   body_composition: Record<string, unknown> | null;
   profile: { sex: string; age: number; height: number };
 }
+
+const UNITS_KEY_FILE = 'units.json';
+export const DEFAULT_UNIT = '小林';
 
 function dataDir(): Directory {
   const dir = new Directory(Paths.document, 'afu_scale');
   if (!dir.exists) dir.create();
   return dir;
 }
+function dataFile(): File { return new File(dataDir(), 'afu_scale.jsonl'); }
+function unitsFile(): File { return new File(dataDir(), UNITS_KEY_FILE); }
 
-function dataFile(): File {
-  return new File(dataDir(), 'afu_scale.jsonl');
+export function newRecordId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
 export async function appendRecord(rec: MeasurementRecord): Promise<string> {
   const file = dataFile();
   const line = JSON.stringify(rec) + '\n';
-  if (file.exists) {
-    // 追加：读旧 + 写新（JSONL 小文件场景够用）
-    const old = file.text();
-    file.write(old + line);
-  } else {
-    file.write(line);
+  try {
+    if (file.exists) {
+      const old = await file.text();
+      file.write(old + line);
+    } else {
+      file.write(line);
+    }
+    return file.uri;
+  } catch (e) {
+    console.warn('appendRecord failed:', e);
+    throw e;
   }
-  return file.uri;
 }
 
 export async function readRecords(): Promise<MeasurementRecord[]> {
@@ -41,13 +59,99 @@ export async function readRecords(): Promise<MeasurementRecord[]> {
   if (!file.exists) return [];
   try {
     const content = await file.text();
-    return content.split('\n').filter((l: string) => l.trim().length > 0).map((l: string) => JSON.parse(l) as MeasurementRecord);
-  } catch {
+    return content.split('\n').filter((l: string) => l.trim().length > 0)
+      .map((l: string) => {
+        const o = JSON.parse(l) as MeasurementRecord;
+        if (!o.id) o.id = newRecordId();
+        return o;
+      });
+  } catch (e) {
+    console.warn('readRecords failed:', e);
     return [];
   }
 }
 
+export async function writeRecords(list: MeasurementRecord[]): Promise<void> {
+  const file = dataFile();
+  const body = list.map((r) => JSON.stringify(r)).join('\n') + (list.length ? '\n' : '');
+  file.write(body);
+}
+
+/** 删除单条记录 */
+export async function deleteRecord(id: string): Promise<MeasurementRecord[]> {
+  const list = await readRecords();
+  const next = list.filter((r) => r.id !== id);
+  await writeRecords(next);
+  return next;
+}
+
+/** 合并远端记录到本地（按 id 去重，远端已有的标记为已推送） */
+export async function mergeRemoteRecords(remote: MeasurementRecord[], remoteStamp?: string): Promise<{ added: number; marked: number; list: MeasurementRecord[] }> {
+  const local = await readRecords();
+  const localIds = new Set(local.map((r) => r.id));
+  const stamp = remoteStamp || new Date().toISOString().slice(0, 19).replace('T', ' ');
+  let added = 0;
+  let marked = 0;
+
+  // 远端有、本地没有 → 加进本地并标记已推送
+  for (const r of remote) {
+    if (!r.id) continue;
+    if (!localIds.has(r.id)) {
+      local.push({ ...r, syncedAt: r.syncedAt || stamp });
+      localIds.add(r.id);
+      added += 1;
+    } else {
+      // 本地已有但未标记 → 标记为已推送
+      const hit = local.find((x) => x.id === r.id);
+      if (hit && !hit.syncedAt) { hit.syncedAt = stamp; marked += 1; }
+    }
+  }
+  if (added > 0 || marked > 0) await writeRecords(local);
+  return { added, marked, list: local };
+}
+
+/** 把指定 id 标记为已推送 */
+export async function markRecordsSynced(ids: string[], when?: string): Promise<MeasurementRecord[]> {
+  const list = await readRecords();
+  const stamp = when || new Date().toISOString().slice(0, 19).replace('T', ' ');
+  let changed = false;
+  for (const r of list) {
+    if (ids.includes(r.id) && !r.syncedAt) { r.syncedAt = stamp; changed = true; }
+  }
+  if (changed) await writeRecords(list);
+  return list;
+}
+
 export async function getRecordCount(): Promise<number> {
-  const recs = await readRecords();
-  return recs.length;
+  return (await readRecords()).length;
+}
+
+// ---------- 单位（用户）管理 ----------
+export async function readUnits(): Promise<string[]> {
+  const f = unitsFile();
+  try {
+    if (!f.exists) return [DEFAULT_UNIT];
+    const arr = JSON.parse(await f.text()) as string[];
+    return arr.length ? arr : [DEFAULT_UNIT];
+  } catch { return [DEFAULT_UNIT]; }
+}
+
+export async function writeUnits(units: string[]): Promise<void> {
+  const f = unitsFile();
+  f.write(JSON.stringify(units));
+}
+
+export async function addUnit(name: string): Promise<string[]> {
+  const units = await readUnits();
+  if (!units.includes(name)) units.push(name);
+  await writeUnits(units);
+  return units;
+}
+
+export async function removeUnit(name: string): Promise<string[]> {
+  let units = await readUnits();
+  units = units.filter((u) => u !== name);
+  if (!units.length) units = [DEFAULT_UNIT];
+  await writeUnits(units);
+  return units;
 }
