@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { C, G, R, SH, T, S } from './theme';
@@ -14,6 +14,8 @@ interface Props {
   onDelete: (id: string) => void;
   syncMsg: string;
   exporting: boolean;
+  goals: Record<string, number>;
+  onSetGoal: (unit: string, kg: number | null) => void;
 }
 
 const BC_LABELS: [string, string, string][] = [
@@ -27,13 +29,15 @@ const BC_LABELS: [string, string, string][] = [
   ['fat_free_mass_kg', '去脂体重', 'kg'],
 ];
 
-export function DataPage({ records, units, onSync, onDelete, syncMsg, exporting }: Props) {
+export function DataPage({ records, units, onSync, onDelete, syncMsg, exporting, goals, onSetGoal }: Props) {
   const insets = useSafeAreaInsets();
   const [activeUnit, setActiveUnit] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pickDate, setPickDate] = useState(false);
   const [detail, setDetail] = useState<MeasurementRecord | null>(null);
+  const [goalSheet, setGoalSheet] = useState(false);
+  const [goalInput, setGoalInput] = useState('');
 
   const dates = useMemo(() => {
     const s = new Set<string>();
@@ -58,6 +62,7 @@ export function DataPage({ records, units, onSync, onDelete, syncMsg, exporting 
     setSelected(allSel ? new Set() : new Set(selectable.map((r) => r.id)));
   };
 
+  const goalUnit = activeUnit || units[0] || '小林';
   const unsynced = filtered.filter((r) => !r.syncedAt).length;
   const latestRec = filtered[0];
   const byUnit = units.map((u) => ({ unit: u, count: records.filter((r) => r.unit === u).length }));
@@ -84,7 +89,12 @@ export function DataPage({ records, units, onSync, onDelete, syncMsg, exporting 
       {/* 趋势图 */}
       <TrendChart
         records={activeUnit ? records.filter((r) => r.unit === activeUnit) : records}
-        unitLabel={activeUnit || '全部'}
+        unitLabel={goalUnit}
+        targetKg={goals[goalUnit] ?? null}
+        onEditTarget={() => {
+          setGoalInput(goals[goalUnit] !== undefined ? String(goals[goalUnit]) : '');
+          setGoalSheet(true);
+        }}
       />
 
       {/* 筛选 */}
@@ -171,6 +181,41 @@ export function DataPage({ records, units, onSync, onDelete, syncMsg, exporting 
       />
 
       {syncMsg ? <Card style={{ marginTop: 12 }}><Text style={styles.syncMsg}>{syncMsg}</Text></Card> : null}
+
+      {/* 目标体重设置 */}
+      <Sheet visible={goalSheet} onClose={() => setGoalSheet(false)} title={`设置目标体重 · ${goalUnit}`}>
+        <Text style={styles.goalHint}>
+          目标由你自己定，仅保存在本机。趋势图会画出目标线并计算差值；留空则不显示目标。
+        </Text>
+        <TextInput
+          value={goalInput}
+          onChangeText={setGoalInput}
+          placeholder="例如 60"
+          placeholderTextColor={C.textHint}
+          keyboardType="decimal-pad"
+          style={styles.goalInput}
+        />
+        <View style={[S.row, { gap: 10, marginTop: 14 }]}>
+          <PrimaryButton
+            title="保存目标"
+            onPress={() => {
+              const v = parseFloat(goalInput.replace(',', '.'));
+              if (Number.isFinite(v) && v > 0 && v < 500) {
+                onSetGoal(goalUnit, v);
+                setGoalSheet(false);
+              }
+            }}
+            colors={G.accent}
+            style={{ flex: 1 }}
+          />
+          <GhostButton
+            title="清除"
+            onPress={() => { onSetGoal(goalUnit, null); setGoalInput(''); setGoalSheet(false); }}
+            style={{ flex: 1 }}
+          />
+        </View>
+        <GhostButton title="取消" onPress={() => setGoalSheet(false)} style={{ marginTop: 10 }} />
+      </Sheet>
 
       {/* 日期 */}
       <Sheet visible={pickDate} onClose={() => setPickDate(false)} title="选择日期">
@@ -308,4 +353,9 @@ const styles = StyleSheet.create({
   detVal: { fontSize: 13, color: C.text, fontWeight: '600', maxWidth: '60%', textAlign: 'right' },
   detSection: { fontSize: 13, color: C.primary, fontWeight: '700', marginTop: 16, marginBottom: 6 },
   detNote: { fontSize: 12, color: C.warn, marginTop: 10 },
+  goalHint: { fontSize: 12, color: C.textSub, lineHeight: 18, marginBottom: 12 },
+  goalInput: {
+    backgroundColor: C.bg, borderWidth: 1, borderColor: C.borderStrong, borderRadius: R.md,
+    padding: 14, fontSize: 20, color: C.text, fontWeight: '700', textAlign: 'center',
+  },
 });

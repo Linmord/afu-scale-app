@@ -13,6 +13,7 @@ import {
   newRecordId, markRecordsSynced, mergeRemoteRecords, DEFAULT_UNIT, type MeasurementRecord,
 } from './src/storage/records';
 import { estimateBodyComposition } from './src/protocol/bodycomp';
+import { getGoals, setGoal, type GoalMap } from './src/storage/goals';
 import { syncRecords, testConnection, fetchRemoteRecords, type SyncConfig } from './src/sync/sync';
 import { ConnectPage } from './src/ui/ConnectPage';
 import { ensureBlePermissions, promptOpenSettings } from './src/ble/permissions';
@@ -36,6 +37,7 @@ export default function App() {
   const [latest, setLatest] = useState<MeasurementResult | null>(null);
   const [records, setRecords] = useState<MeasurementRecord[]>([]);
   const [units, setUnits] = useState<string[]>([DEFAULT_UNIT]);
+  const [goals, setGoals] = useState<GoalMap>({});
   const [syncUrl, setSyncUrl] = useState('http://192.168.1.5:8765/records');
   const URL_KEY = 'afu_sync_url';
   const [syncMsg, setSyncMsg] = useState('');       // 数据页推送结果
@@ -53,6 +55,7 @@ export default function App() {
     setDevices(await getDevices());
     setRecords(await readRecords());
     setUnits(await readUnits());
+    setGoals(await getGoals());
   }, []);
 
   // 启动时恢复上次保存的推送地址
@@ -228,6 +231,11 @@ export default function App() {
     }
   }, [syncUrl]);
 
+  /** 设置某单位的目标体重（null = 清除） */
+  const handleSetGoal = useCallback(async (unit: string, kg: number | null) => {
+    setGoals(await setGoal(unit, kg));
+  }, []);
+
   /** 删除记录 */
   const handleDeleteRecord = useCallback(async (id: string) => {
     const next = await deleteRecord(id);
@@ -305,6 +313,8 @@ export default function App() {
       onDelete={handleDeleteRecord}
       syncMsg={syncMsg}
       exporting={syncing}
+      goals={goals}
+      onSetGoal={handleSetGoal}
     />
   ) : (
     <SettingsPage

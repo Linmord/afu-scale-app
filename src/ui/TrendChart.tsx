@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { C, R, T, S } from './theme';
 import type { MeasurementRecord } from '../storage/records';
 
@@ -15,7 +15,6 @@ const PAD_L = 42;
 const PAD_R = 14;
 const PAD_T = 16;
 const PAD_B = 26;
-const TARGET_KG = 60;
 
 interface Point { date: string; kg: number }
 
@@ -33,7 +32,14 @@ function aggregate(records: MeasurementRecord[]): Point[] {
     .slice(-30);   // 最多显示 30 天
 }
 
-export function TrendChart({ records, unitLabel }: { records: MeasurementRecord[]; unitLabel: string }) {
+export function TrendChart({
+  records, unitLabel, targetKg, onEditTarget,
+}: {
+  records: MeasurementRecord[];
+  unitLabel: string;
+  targetKg: number | null;
+  onEditTarget: () => void;
+}) {
   const [width, setWidth] = useState(0);
 
   const pts = useMemo(() => aggregate(records), [records]);
@@ -74,20 +80,25 @@ export function TrendChart({ records, unitLabel }: { records: MeasurementRecord[
     });
     const minIdx = pts.findIndex((p) => p.kg === stats.min);
     const maxIdx = pts.findIndex((p) => p.kg === stats.max);
-    const inRange = TARGET_KG >= lo && TARGET_KG <= hi;
-    const targetY = inRange ? y(TARGET_KG) : null;
+    const inRange = targetKg !== null && targetKg >= lo && targetKg <= hi;
+    const targetY = inRange && targetKg !== null ? y(targetKg) : null;
     return { segs, dots, grid, minIdx, maxIdx, lastIdx: pts.length - 1, lo, hi, targetY };
-  }, [pts, stats, width]);
+  }, [pts, stats, width, targetKg]);
 
   if (!stats || pts.length === 0) return null;
 
-  const toTarget = stats.last - TARGET_KG;
+  const toTarget = targetKg !== null ? stats.last - targetKg : null;
 
   return (
     <View style={styles.wrap}>
       <View style={styles.headRow}>
         <Text style={styles.headTitle}>体重趋势</Text>
-        <Text style={styles.headSub}>{unitLabel} · 近 {pts.length} 天</Text>
+        <View style={styles.headRight}>
+          <Text style={styles.headSub}>{unitLabel} · {pts.length} 天</Text>
+          <TouchableOpacity onPress={onEditTarget} style={styles.targetBtn}>
+            <Text style={styles.targetBtnText}>{targetKg !== null ? `目标 ${targetKg}` : '设目标'}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.chartBox} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
@@ -105,7 +116,7 @@ export function TrendChart({ records, unitLabel }: { records: MeasurementRecord[
             {layout.targetY !== null && (
               <>
                 <View style={[styles.targetLine, { top: layout.targetY }]} />
-                <Text style={[styles.targetLabel, { top: layout.targetY - 14 }]}>目标 {TARGET_KG}</Text>
+                <Text style={[styles.targetLabel, { top: layout.targetY - 14 }]}>目标 {targetKg}</Text>
               </>
             )}
 
@@ -177,7 +188,12 @@ export function TrendChart({ records, unitLabel }: { records: MeasurementRecord[
           unit="kg"
           color={stats.delta > 0.05 ? C.warn : stats.delta < -0.05 ? C.accent : C.textSub}
         />
-        <MiniStat label="距目标" value={toTarget.toFixed(1)} unit="kg" color={toTarget <= 0 ? C.accent : C.textSub} />
+        <MiniStat
+          label={toTarget === null ? '目标未设' : (toTarget <= 0 ? '已达标' : '距目标')}
+          value={toTarget === null ? '—' : Math.abs(toTarget).toFixed(1)}
+          unit={toTarget === null ? '' : 'kg'}
+          color={toTarget === null ? C.textHint : toTarget <= 0 ? C.accent : C.textSub}
+        />
       </View>
     </View>
   );
@@ -201,7 +217,13 @@ const styles = StyleSheet.create({
   wrap: { backgroundColor: C.surface, borderRadius: R.lg, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: C.border },
   headRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 },
   headTitle: { fontSize: 16, fontWeight: '700', color: C.text },
+  headRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headSub: { fontSize: 12, color: C.textHint },
+  targetBtn: {
+    backgroundColor: 'rgba(0,217,163,0.14)', borderWidth: 1, borderColor: 'rgba(0,217,163,0.4)',
+    borderRadius: R.pill, paddingHorizontal: 10, paddingVertical: 4,
+  },
+  targetBtnText: { fontSize: 11, color: C.accent, fontWeight: '700' },
   chartBox: { width: '100%', height: CHART_H, position: 'relative' },
   gridLine: { position: 'absolute', left: PAD_L, right: PAD_R, height: 1, backgroundColor: 'rgba(255,255,255,0.06)' },
   yLabel: { position: 'absolute', left: 4, width: PAD_L - 10, fontSize: 10, color: C.textHint, textAlign: 'right' },
