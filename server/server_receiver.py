@@ -88,6 +88,24 @@ class Handler(BaseHTTPRequestHandler):
         self._send(404)
 
     def do_POST(self):
+        if self.path.startswith("/debug"):
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                data = json.loads(self.rfile.read(length) or b"{}")
+                tag = data.get("tag", "app")
+                events = data.get("events", [])
+                fname = os.path.join(os.path.dirname(self.out_path), f"debug_{tag}.jsonl")
+                received = 0
+                with lock:
+                    with open(fname, "a", encoding="utf-8") as f:
+                        for ev in events:
+                            f.write(json.dumps(ev, ensure_ascii=False) + "\n")
+                            received += 1
+                print("[debug] %s -> %d events" % (tag, received))
+                self._send(200, json.dumps({"ok": True, "received": received}).encode())
+            except Exception as e:
+                self._send(400, json.dumps({"ok": False, "error": str(e)}).encode())
+            return
         if self.path.startswith("/records"):
             try:
                 length = int(self.headers.get("Content-Length", "0"))

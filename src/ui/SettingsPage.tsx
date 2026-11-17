@@ -44,11 +44,12 @@ interface Props {
   debugLogs: string;
   onRefreshLogs: () => void;
   onClearLogs: () => void;
+  onProbe: () => void;
 }
 
 export function SettingsPage({
   url, onUrlChange, units, onAddUnit, onRemoveUnit, onTestSync, testMsg, onPullRemote, remoteMsg,
-  devices, onUnbind, debugLogs, onRefreshLogs, onClearLogs,
+  devices, onUnbind, debugLogs, onRefreshLogs, onClearLogs, onProbe,
 }: Props) {
   const { t, lang, pref, setLang } = useI18n();
   const [langSheet, setLangSheet] = useState(false);
@@ -174,6 +175,7 @@ export function SettingsPage({
         </TouchableOpacity>
         {showDebug && (
           <View style={{ marginTop: 12 }}>
+            <PrimaryButton title="🔬 历史同步探测（实验）" onPress={onProbe} style={{ marginBottom: 10 }} colors={G.warm} />
             <View style={[S.row, { gap: 10, marginBottom: 10 }]}>
               <GhostButton title={t.refresh} onPress={onRefreshLogs} style={{ flex: 1 }} />
               <GhostButton title={t.clear} onPress={onClearLogs} danger style={{ flex: 1 }} />

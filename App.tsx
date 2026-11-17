@@ -21,6 +21,7 @@ import { ensureBlePermissions, promptOpenSettings } from './src/ble/permissions'
 import { DevicePage } from './src/ui/DevicePage';
 import { DataPage } from './src/ui/DataPage';
 import { SettingsPage } from './src/ui/SettingsPage';
+import { ProbePage } from './src/ui/ProbePage';
 import { C } from './src/ui/theme';
 
 const DEFAULT_PROFILE = { age: 24, sex: 'female' as const, height: 168, unit: 'kg' };
@@ -55,6 +56,7 @@ function AppInner() {
   const [syncing, setSyncing] = useState(false);
   const [dbgLogs, setDbgLogs] = useState('');
   const [permDenied, setPermDenied] = useState(false);
+  const [probeMode, setProbeMode] = useState(false);
   const { t } = useI18n();
 
   const sessionRef = useRef<MeasureSession | null>(null);
@@ -281,6 +283,17 @@ function AppInner() {
     setDbgLogs(`扫描回调 ${stats.count} 次 / 扫描中=${stats.active}\n` + (logs || '(无)'));
   };
 
+  if (probeMode && devices.length > 0) {
+    return (
+      <ProbePage
+        device={devices[0]}
+        profile={DEFAULT_PROFILE}
+        syncUrl={syncUrl}
+        onBack={() => setProbeMode(false)}
+      />
+    );
+  }
+
   const body = openDevice ? (
     <DevicePage
       device={openDevice}
@@ -342,6 +355,7 @@ function AppInner() {
       debugLogs={dbgLogs}
       onRefreshLogs={refreshDbg}
       onClearLogs={handleClearLogs}
+      onProbe={() => { setProbeMode(true); }}
     />
   );
 
