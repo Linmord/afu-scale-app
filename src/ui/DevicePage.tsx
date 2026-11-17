@@ -19,6 +19,7 @@ interface Props {
   onRename: (name: string) => void;
   onSave: (unit: string) => void;
   onUnbind: () => void;
+  historyFound?: number;
 }
 
 const BC_GRID: [string, string, string][] = [
@@ -31,7 +32,7 @@ const BC_GRID: [string, string, string][] = [
 ];
 
 export function DevicePage({
-  device, units, state, stateDetail, latest, profile, onBack, onRename, onSave, onUnbind,
+  device, units, state, stateDetail, latest, profile, onBack, onRename, onSave, onUnbind, historyFound,
 }: Props) {
   const { t } = useI18n();
   const [name, setName] = useState(device.name);
@@ -84,6 +85,14 @@ export function DevicePage({
           </View>
         )}
       </LinearGradient>
+
+      {historyFound !== undefined && historyFound > 0 && (
+        <View style={[S.card, { borderColor: 'rgba(0,217,163,0.4)' }]}>
+          <Text style={{ fontSize: 14, color: C.accent, fontWeight: '700' }}>
+            📦 从秤上补收 {historyFound} 条历史记录（已入库）
+          </Text>
+        </View>
+      )}
 
       {/* 身体成分 */}
       {latest && latest.locked && latest.electrode_on && comp && (

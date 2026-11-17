@@ -85,6 +85,41 @@ export async function deleteRecord(id: string): Promise<MeasurementRecord[]> {
   return next;
 }
 
+/** 秤端历史包入库：按 time 秒级去重（同一测量重发多次只存一条） */
+export async function importHistoryEvents(
+  events: { time: number; weight_kg: number | null; adcs: number[]; hr: number | null }[],
+  unit: string,
+  profile: { sex: string; age: number; height: number },
+): Promise<{ added: number; skipped: number; list: MeasurementRecord[] }> {
+  const list = await readRecords();
+  const timeKeys = new Set(list.map((r) => r.time));
+  let added = 0;
+  let skipped = 0;
+  for (const ev of events) {
+    if (!ev.time || ev.weight_kg === null || ev.weight_kg <= 0) { skipped++; continue; }
+    const d = new Date(ev.time * 1000);
+    const time = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0')
+      + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ':' + String(d.getSeconds()).padStart(2,'0');
+    if (timeKeys.has(time)) { skipped++; continue; }
+    timeKeys.add(time);
+    list.push({
+      id: newRecordId(),
+      time,
+      unit,
+      weight_kg: ev.weight_kg,
+      impedance_1: ev.adcs[0] ?? null,
+      impedance_2: ev.adcs[1] ?? null,
+      adcs: ev.adcs,
+      electrode_on: ev.adcs.some((v) => v > 0),
+      body_composition: null,   // 历史补录的体脂由 UI 按需估算，不在此强算
+      profile,
+    });
+    added++;
+  }
+  if (added > 0) await writeRecords(list);
+  return { added, skipped, list };
+}
+
 /** 合并远端记录到本地（按 id 去重，远端已有的标记为已推送） */
 export async function mergeRemoteRecords(remote: MeasurementRecord[], remoteStamp?: string): Promise<{ added: number; marked: number; list: MeasurementRecord[] }> {
   const local = await readRecords();

@@ -1,4 +1,5 @@
 import { BleManager } from 'react-native-ble-plx';
+import { decodeHistoryPacket, type HistoryEvent } from '../protocol/history27';
 
 /**
  * BLE 连接层 v4：保持连接的持续测量。
@@ -28,6 +29,7 @@ export interface ScannedDeviceInfo {
   bound?: boolean;
 }
 export type DebugLog = { ts: number; msg: string };
+export type { HistoryEvent };
 
 const SEX_INT: Record<string, number> = { male: 2, female: 1 };
 
@@ -126,6 +128,7 @@ export async function startMeasureSession(
   profile: UserProfile,
   onMeasurement: (r: MeasurementResult) => void,
   onState: (state: 'connecting' | 'connected' | 'listening' | 'disconnected' | 'error', detail?: string) => void,
+  onHistory?: (events: HistoryEvent[]) => void,
 ): Promise<MeasureSession> {
   const m = getManager();
   let stopped = false;
@@ -186,6 +189,12 @@ export async function startMeasureSession(
           const data = new Uint8Array(bin.length);
           for (let i = 0; i < bin.length; i++) data[i] = bin.charCodeAt(i);
           if (data.length < 13) return;
+          // 216 历史包：packet_type 在 data[18]（body18[16]）
+          if (data[18] === 216) {
+            const events = decodeHistoryPacket(data);
+            if (events.length && onHistory) { pushDebug('历史包 x' + events.length); onHistory(events); }
+            return;
+          }
           const type = data[2];
           if (type !== 0x00 && type !== 0x02) return;
           const wRaw = (data[10] << 16) | (data[11] << 8) | data[12];

@@ -11,7 +11,7 @@ import {
 import { getDevices, addDevice, removeDevice, renameDevice, type BoundDevice } from './src/storage/devices';
 import {
   appendRecord, readRecords, readUnits, addUnit, removeUnit, deleteRecord,
-  newRecordId, markRecordsSynced, mergeRemoteRecords, DEFAULT_UNIT, type MeasurementRecord,
+  newRecordId, markRecordsSynced, mergeRemoteRecords, importHistoryEvents, DEFAULT_UNIT, type MeasurementRecord,
 } from './src/storage/records';
 import { estimateBodyComposition } from './src/protocol/bodycomp';
 import { getGoals, setGoal, type GoalMap } from './src/storage/goals';
@@ -112,8 +112,13 @@ function AppInner() {
   }, []);
 
   // 打开某台设备 → 建立持久测量会话
+  const historyCountRef = useRef(0);
+  const [historyFound, setHistoryFound] = useState(0);
+
   const handleOpenDevice = useCallback(async (dev: BoundDevice) => {
     await requestPerms();
+    historyCountRef.current = 0;
+    setHistoryFound(0);
     setOpenDevice(dev);
     setTab('connect');
     setLatest(null);
@@ -300,6 +305,7 @@ function AppInner() {
       units={units}
       state={connState === 'idle' ? 'idle' : connState === 'listening' ? 'listening' : connState === 'error' ? 'error' : 'connecting'}
       stateDetail={connDetail}
+      historyFound={historyFound}
       latest={latest}
       profile={DEFAULT_PROFILE}
       onBack={() => { closeSession(); setOpenDevice(null); }}
