@@ -3,6 +3,7 @@ import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { C, G, R, SH, T, S } from './theme';
+import { useI18n } from '../i18n';
 import { Card, PrimaryButton, GhostButton, Badge, Sheet, SectionTitle, EmptyState, StatPill } from './components';
 import { TrendChart } from './TrendChart';
 import type { MeasurementRecord } from '../storage/records';
@@ -30,6 +31,7 @@ const BC_LABELS: [string, string, string][] = [
 ];
 
 export function DataPage({ records, units, onSync, onDelete, syncMsg, exporting, goals, onSetGoal }: Props) {
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const [activeUnit, setActiveUnit] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<string | null>(null);
@@ -62,7 +64,7 @@ export function DataPage({ records, units, onSync, onDelete, syncMsg, exporting,
     setSelected(allSel ? new Set() : new Set(selectable.map((r) => r.id)));
   };
 
-  const goalUnit = activeUnit || units[0] || '小林';
+  const goalUnit = activeUnit || units[0] || '';
   const unsynced = filtered.filter((r) => !r.syncedAt).length;
   const latestRec = filtered[0];
   const byUnit = units.map((u) => ({ unit: u, count: records.filter((r) => r.unit === u).length }));
@@ -72,16 +74,16 @@ export function DataPage({ records, units, onSync, onDelete, syncMsg, exporting,
       {/* 概览卡 */}
       {latestRec && (
         <LinearGradient colors={G.hero as never} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
-          <Text style={styles.heroLabel}>最近一次 · {latestRec.unit}</Text>
+          <Text style={styles.heroLabel}>{t.latestRecord} · {latestRec.unit}</Text>
           <View style={[S.row, { alignItems: 'flex-end', marginTop: 8 }]}>
             <Text style={styles.heroWeight}>{latestRec.weight_kg.toFixed(1)}</Text>
             <Text style={styles.heroUnit}>kg</Text>
           </View>
           <Text style={styles.heroTime}>{latestRec.time}</Text>
           <View style={[S.row, { marginTop: 16 }]}>
-            <StatPill label="总记录" value={String(records.length)} />
-            <StatPill label="未推送" value={String(records.filter((r) => !r.syncedAt).length)} color={C.warn} />
-            <StatPill label="单位" value={String(units.length)} color={C.primary} />
+            <StatPill label={t.totalRecords} value={String(records.length)} />
+            <StatPill label={t.unsynced} value={String(records.filter((r) => !r.syncedAt).length)} color={C.warn} />
+            <StatPill label={t.unitsLabel} value={String(units.length)} color={C.primary} />
           </View>
         </LinearGradient>
       )}
@@ -100,38 +102,38 @@ export function DataPage({ records, units, onSync, onDelete, syncMsg, exporting,
       {/* 筛选 */}
       <Card>
         <View style={S.rowBetween}>
-          <Text style={S.label}>按单位筛选</Text>
+          <Text style={S.label}>{t.filterByUnit}</Text>
           <TouchableOpacity onPress={() => setPickDate(true)}>
-            <Text style={styles.link}>{dateFilter || '按日期'} ▾</Text>
+            <Text style={styles.link}>{dateFilter || t.byDate} ▾</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.chipRow}>
-          <Chip label={`全部 ${records.length}`} active={activeUnit === null} onPress={() => setActiveUnit(null)} />
+          <Chip label={`${t.all} ${records.length}`} active={activeUnit === null} onPress={() => setActiveUnit(null)} />
           {byUnit.map((b) => (
             <Chip key={b.unit} label={`${b.unit} ${b.count}`} active={activeUnit === b.unit} onPress={() => setActiveUnit(b.unit)} />
           ))}
         </View>
         {dateFilter && (
           <TouchableOpacity onPress={() => setDateFilter(null)} style={{ marginTop: 10 }}>
-            <Text style={styles.clear}>× 清除日期筛选</Text>
+            <Text style={styles.clear}>× {t.clearDateFilter}</Text>
           </TouchableOpacity>
         )}
       </Card>
 
       {/* 列表 */}
       <SectionTitle
-        title={`记录 ${filtered.length}`}
+        title={`${t.records} ${filtered.length}`}
         right={
           <TouchableOpacity onPress={toggleAll}>
             <Text style={styles.link}>
-              {selectable.length > 0 && selectable.every((r) => selected.has(r.id)) ? '取消全选' : '全选未推送'}
+              {selectable.length > 0 && selectable.every((r) => selected.has(r.id)) ? t.unselectAll : t.selectAllUnsynced}
             </Text>
           </TouchableOpacity>
         }
       />
 
       {filtered.length === 0 ? (
-        <Card><EmptyState icon="📊" title="暂无数据" desc="去连接页测量并保存" /></Card>
+        <Card><EmptyState icon="📊" title={t.noData} desc={t.noDataDesc} /></Card>
       ) : (
         filtered.slice().reverse().map((r) => {
           const pushed = !!r.syncedAt;
@@ -149,14 +151,14 @@ export function DataPage({ records, units, onSync, onDelete, syncMsg, exporting,
                 <View style={{ flex: 1 }}>
                   <View style={[S.row, { marginBottom: 3 }]}>
                     <Text style={styles.recUnit}>{r.unit}</Text>
-                    {pushed && <Badge text="已推送" color={C.accent} />}
-                    {!r.electrode_on && <Badge text="无阻抗" color={C.warn} />}
+                    {pushed && <Badge text={t.synced} color={C.accent} />}
+                    {!r.electrode_on && <Badge text={t.electrodeOffShort} color={C.warn} />}
                   </View>
                   <View style={S.row}>
                     <Text style={styles.recWeight}>{r.weight_kg.toFixed(2)}</Text>
                     <Text style={styles.recKg}>kg</Text>
                     {bc && r.electrode_on && (
-                      <Text style={styles.recFat}>  体脂 {bc.body_fat_percent}%</Text>
+                      <Text style={styles.recFat}>  {t.bcFat} {bc.body_fat_percent}%</Text>
                     )}
                   </View>
                   <Text style={styles.recTime}>{r.time}</Text>
@@ -173,7 +175,7 @@ export function DataPage({ records, units, onSync, onDelete, syncMsg, exporting,
 
       <View style={{ height: 12 }} />
       <PrimaryButton
-        title={exporting ? '推送中…' : `推送已选 ${selected.size} 条`}
+        title={exporting ? t.pushing : `${t.pushSelected} ${selected.size}`}
         onPress={() => onSync(records.filter((r) => selected.has(r.id) && !r.syncedAt))}
         disabled={selected.size === 0}
         loading={exporting}
@@ -183,21 +185,21 @@ export function DataPage({ records, units, onSync, onDelete, syncMsg, exporting,
       {syncMsg ? <Card style={{ marginTop: 12 }}><Text style={styles.syncMsg}>{syncMsg}</Text></Card> : null}
 
       {/* 目标体重设置 */}
-      <Sheet visible={goalSheet} onClose={() => setGoalSheet(false)} title={`设置目标体重 · ${goalUnit}`}>
+      <Sheet visible={goalSheet} onClose={() => setGoalSheet(false)} title={`${t.setGoal} · ${goalUnit}`}>
         <Text style={styles.goalHint}>
-          目标由你自己定，仅保存在本机。趋势图会画出目标线并计算差值；留空则不显示目标。
+        {t.goalHint}
         </Text>
         <TextInput
           value={goalInput}
           onChangeText={setGoalInput}
-          placeholder="例如 60"
+          placeholder={t.goalPlaceholder}
           placeholderTextColor={C.textHint}
           keyboardType="decimal-pad"
           style={styles.goalInput}
         />
         <View style={[S.row, { gap: 10, marginTop: 14 }]}>
           <PrimaryButton
-            title="保存目标"
+            title={t.saveGoal}
             onPress={() => {
               const v = parseFloat(goalInput.replace(',', '.'));
               if (Number.isFinite(v) && v > 0 && v < 500) {
@@ -209,26 +211,26 @@ export function DataPage({ records, units, onSync, onDelete, syncMsg, exporting,
             style={{ flex: 1 }}
           />
           <GhostButton
-            title="清除"
+            title={t.clearGoal}
             onPress={() => { onSetGoal(goalUnit, null); setGoalInput(''); setGoalSheet(false); }}
             style={{ flex: 1 }}
           />
         </View>
-        <GhostButton title="取消" onPress={() => setGoalSheet(false)} style={{ marginTop: 10 }} />
+        <GhostButton title={t.cancel} onPress={() => setGoalSheet(false)} style={{ marginTop: 10 }} />
       </Sheet>
 
       {/* 日期 */}
-      <Sheet visible={pickDate} onClose={() => setPickDate(false)} title="选择日期">
+      <Sheet visible={pickDate} onClose={() => setPickDate(false)} title={t.selectDate}>
         <ScrollView style={{ maxHeight: 340 }}>
-          {dates.length === 0 && <Text style={S.hint}>暂无记录</Text>}
+          {dates.length === 0 && <Text style={S.hint}>{t.noData}</Text>}
           {dates.map((d) => (
             <TouchableOpacity key={d} style={styles.dateRow} onPress={() => { setDateFilter(d); setPickDate(false); }}>
               <Text style={[styles.dateText, dateFilter === d && { color: C.primary, fontWeight: '700' }]}>{d}</Text>
-              <Text style={styles.dateCount}>{records.filter((r) => r.time.slice(0, 10) === d).length} 条</Text>
+              <Text style={styles.dateCount}>{records.filter((r) => r.time.slice(0, 10) === d).length} {t.records}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
-        <GhostButton title="关闭" onPress={() => setPickDate(false)} style={{ marginTop: 12 }} />
+        <GhostButton title={t.close} onPress={() => setPickDate(false)} style={{ marginTop: 12 }} />
       </Sheet>
 
       {/* 详情：用 Modal 实现真正全屏覆盖（不受顶栏/底栏限制） */}
@@ -236,9 +238,9 @@ export function DataPage({ records, units, onSync, onDelete, syncMsg, exporting,
         <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top, paddingBottom: insets.bottom }}>
           <View style={styles.fullHeader}>
             <TouchableOpacity onPress={() => setDetail(null)} style={styles.backHit}>
-              <Text style={styles.backText}>‹ 返回</Text>
+              <Text style={styles.backText}>‹ {t.back}</Text>
             </TouchableOpacity>
-            <Text style={styles.fullTitle}>测量详情</Text>
+            <Text style={styles.fullTitle}> {t.detailTitle}</Text>
             <View style={{ width: 60 }} />
           </View>
           {detail && (() => {
@@ -254,24 +256,24 @@ export function DataPage({ records, units, onSync, onDelete, syncMsg, exporting,
                 </View>
 
                 <View style={styles.detCard}>
-                  <DetRow k="电极状态" v={detail.electrode_on ? '已导通' : '未导通（无阻抗）'} vColor={detail.electrode_on ? C.accent : C.warn} />
+                  <DetRow k={t.connectState} v={detail.electrode_on ? t.electrodeOn : t.electrodeOffShort} vColor={detail.electrode_on ? C.accent : C.warn} />
                   {detail.adcs && detail.adcs.length > 0 && (
-                    <DetRow k="阻抗原始值" v={JSON.stringify(detail.adcs)} />
+                    <DetRow k={t.impedanceRaw} v={JSON.stringify(detail.adcs)} />
                   )}
-                  <DetRow k="推送状态" v={detail.syncedAt ? '已推送 ' + detail.syncedAt : '未推送'} vColor={detail.syncedAt ? C.accent : C.textHint} />
+                  <DetRow k={t.pushStatus} v={detail.syncedAt ? t.synced + detail.syncedAt : t.notSynced} vColor={detail.syncedAt ? C.accent : C.textHint} />
                 </View>
 
                 {bc ? (
                   <View style={[styles.detCard, { marginTop: 14 }]}>
-                    <Text style={styles.detSection}>身体成分（本地 BIA 估算）</Text>
+                    <Text style={styles.detSection}> {t.bodyCompLocal}</Text>
                     {BC_LABELS.filter(([k]) => bc[k] !== undefined && bc[k] !== null).map(([k, label, unit]) => (
                       <DetRow key={k} k={label} v={`${bc[k]}${unit}`} />
                     ))}
-                    {bc.model ? <DetRow k="算法模型" v={String(bc.model)} /> : null}
+                    {bc.model ? <DetRow k={t.algorithm} v={String(bc.model)} /> : null}
                   </View>
                 ) : (
                   <View style={[styles.detCard, { marginTop: 14 }]}>
-                    <Text style={styles.detNote}>体脂等数据不可用（电极未导通）</Text>
+                    <Text style={styles.detNote}> {t.compUnavailable}</Text>
                   </View>
                 )}
               </ScrollView>

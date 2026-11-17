@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { C, G, R, SH, T, S } from './theme';
+import { useI18n } from '../i18n';
 import { Card, PrimaryButton, GhostButton, Badge, Sheet, SectionTitle } from './components';
 import type { BoundDevice } from '../storage/devices';
 import type { MeasurementResult } from '../ble/scaleBle';
@@ -32,6 +33,7 @@ const BC_GRID: [string, string, string][] = [
 export function DevicePage({
   device, units, state, stateDetail, latest, profile, onBack, onRename, onSave, onUnbind,
 }: Props) {
+  const { t } = useI18n();
   const [name, setName] = useState(device.name);
   const [editing, setEditing] = useState(false);
   const [saveSheet, setSaveSheet] = useState(false);
@@ -42,13 +44,13 @@ export function DevicePage({
     : null;
 
   const connected = state === 'listening';
-  const stateLabel = state === 'connecting' ? '连接中' : connected ? '已连接' : state === 'error' ? '连接失败' : '未连接';
+  const stateLabel = state === 'connecting' ? t.stateConnecting : connected ? t.stateConnected : state === 'error' ? t.stateError : t.stateIdle;
   const stateColor = state === 'error' ? C.danger : connected ? C.accent : C.textHint;
 
   return (
     <ScrollView style={styles.wrap} contentContainerStyle={{ paddingBottom: 90 }} showsVerticalScrollIndicator={false}>
       <TouchableOpacity onPress={onBack} style={styles.back}>
-        <Text style={styles.backText}>‹ 设备</Text>
+        <Text style={styles.backText}>‹ {t.back}</Text>
       </TouchableOpacity>
 
       {/* Hero 体重卡 */}
@@ -74,11 +76,11 @@ export function DevicePage({
         </Text>
 
         {state === 'connecting' && <ActivityIndicator color={C.primary} style={{ marginTop: 14 }} />}
-        {connected && !latest && <Text style={styles.hintCenter}>站上秤即可开始测量</Text>}
+        {connected && !latest && <Text style={styles.hintCenter}>{t.standOnScale}</Text>}
 
         {latest && !latest.electrode_on && (
           <View style={styles.warnBox}>
-            <Text style={styles.warnBoxText}>⚠ 电极未导通 · 请赤脚同时踩满四个电极</Text>
+            <Text style={styles.warnBoxText}>{t.electrodeOff}</Text>
           </View>
         )}
       </LinearGradient>
@@ -86,14 +88,14 @@ export function DevicePage({
       {/* 身体成分 */}
       {latest && latest.locked && latest.electrode_on && comp && (
         <Card>
-          <SectionTitle title="身体成分" right={<Badge text="本地估算" color={C.warn} />} />
+          <SectionTitle title={t.bodyComp} right={<Badge text={t.localEstimate} color={C.warn} />} />
           <View style={styles.grid}>
-            {BC_GRID.filter(([k]) => (comp as unknown as Record<string, number>)[k] !== undefined).map(([k, label, unit]) => (
+            {BC_GRID.filter(([k]) => (comp as unknown as Record<string, number>)[k] !== undefined).map(([k, labelKey, unit]) => (
               <View key={k} style={styles.gridItem}>
                 <Text style={styles.gridValue}>
                   {(comp as unknown as Record<string, number>)[k]}<Text style={styles.gridUnit}>{unit}</Text>
                 </Text>
-                <Text style={styles.gridLabel}>{label}</Text>
+                <Text style={styles.gridLabel}>{(t as unknown as Record<string, string>)[labelKey]}</Text>
               </View>
             ))}
           </View>
@@ -102,34 +104,34 @@ export function DevicePage({
 
       {/* 保存 */}
       {latest && latest.locked && latest.weight_kg > 0 && (
-        <PrimaryButton title="保存这次测量" onPress={() => setSaveSheet(true)} colors={G.accent} />
+        <PrimaryButton title={t.saveMeasurement} onPress={() => setSaveSheet(true)} colors={G.accent} />
       )}
 
       {/* 设备信息 */}
       <Card style={{ marginTop: 14 }}>
-        <SectionTitle title="设备信息" />
+        <SectionTitle title={t.deviceInfo} />
         {editing ? (
           <>
             <TextInput value={name} onChangeText={setName} style={styles.input} placeholder="设备名称" placeholderTextColor={C.textHint} />
             <View style={[S.row, { gap: 10, marginTop: 10 }]}>
-              <PrimaryButton title="保存" onPress={() => { onRename(name.trim() || device.name); setEditing(false); }} style={{ flex: 1 }} />
-              <GhostButton title="取消" onPress={() => { setName(device.name); setEditing(false); }} style={{ flex: 1 }} />
+              <PrimaryButton title={t.save} onPress={() => { onRename(name.trim() || device.name); setEditing(false); }} style={{ flex: 1 }} />
+              <GhostButton title={t.cancel} onPress={() => { setName(device.name); setEditing(false); }} style={{ flex: 1 }} />
             </View>
           </>
         ) : (
           <>
-            <InfoRow k="名称" v={device.name} onPress={() => setEditing(true)} action="重命名" />
-            <InfoRow k="型号" v={device.model} />
+            <InfoRow k={t.devName} v={device.name} onPress={() => setEditing(true)} action={t.rename} />
+            <InfoRow k={t.devModel} v={device.model} />
             <InfoRow k="MAC" v={device.id} mono />
-            <InfoRow k="绑定时间" v={device.boundAt} />
+            <InfoRow k={t.devBoundAt} v={device.boundAt} />
           </>
         )}
       </Card>
 
-      <GhostButton title="解除绑定" danger onPress={onUnbind} style={{ marginTop: 6 }} />
+      <GhostButton title={t.unbind} danger onPress={onUnbind} style={{ marginTop: 6 }} />
 
       {/* 分配单位选择 */}
-      <Sheet visible={saveSheet} onClose={() => setSaveSheet(false)} title="这次测量属于谁？">
+      <Sheet visible={saveSheet} onClose={() => setSaveSheet(false)} title={t.whoIsThis}>
         {units.map((u) => (
           <TouchableOpacity key={u} activeOpacity={0.8} style={styles.unitBtn}
             onPress={() => { setSaveSheet(false); onSave(u); }}>
@@ -137,7 +139,7 @@ export function DevicePage({
             <Text style={styles.unitChev}>›</Text>
           </TouchableOpacity>
         ))}
-        <GhostButton title="取消" onPress={() => setSaveSheet(false)} style={{ marginTop: 12 }} />
+        <GhostButton title={t.cancel} onPress={() => setSaveSheet(false)} style={{ marginTop: 12 }} />
       </Sheet>
     </ScrollView>
   );

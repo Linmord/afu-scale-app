@@ -1,6 +1,7 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, ViewStyle } from 'react-native';
+import { Modal, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, G, R, SH, T, S } from './theme';
 
 /** 主按钮（渐变） */
@@ -79,20 +80,22 @@ export function Badge({ text, color = C.accent }: { text: string; color?: string
   );
 }
 
-/** 弹层壳 */
+/** 底部弹层（Modal 实现：真正屏幕级，不受父级 ScrollView 影响） */
 export function Sheet({ visible, onClose, title, children }: {
   visible: boolean; onClose: () => void; title: string; children: React.ReactNode;
 }) {
-  if (!visible) return null;
+  const insets = useSafeAreaInsets();
   return (
-    <View style={styles.sheetBg}>
-      <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
-      <View style={styles.sheetCard}>
-        <View style={styles.sheetHandle} />
-        <Text style={styles.sheetTitle}>{title}</Text>
-        {children}
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+      <View style={styles.sheetBg}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
+        <View style={[styles.sheetCard, { paddingBottom: Math.max(insets.bottom, 20) + 14 }]}>
+          <View style={styles.sheetHandle} />
+          <Text style={styles.sheetTitle}>{title}</Text>
+          {children}
+        </View>
       </View>
-    </View>
+    </Modal>
   );
 }
 
@@ -111,7 +114,7 @@ const styles = StyleSheet.create({
   emptyDesc: { fontSize: 13, color: C.textHint, marginTop: 6, textAlign: 'center', paddingHorizontal: 20, lineHeight: 19 },
   badge: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: R.pill, borderWidth: 1 },
   badgeText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.2 },
-  sheetBg: { ...StyleSheet.absoluteFillObject, backgroundColor: C.overlay, justifyContent: 'flex-end' },
+  sheetBg: { flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' },
   sheetCard: {
     backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl,
     padding: 22, paddingBottom: 34, borderTopWidth: 1, borderColor: C.borderStrong,

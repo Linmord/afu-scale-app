@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { C, R, T, S } from './theme';
+import { useI18n } from '../i18n';
 import type { MeasurementRecord } from '../storage/records';
 
 /**
@@ -18,9 +19,14 @@ const PAD_B = 26;
 
 interface Point { date: string; kg: number }
 
+// 趋势图仅采纳合理区间的读数，避免搬秤/手扶产生的异常值把 Y 轴拉歪
+const MIN_VALID_KG = 30;
+const MAX_VALID_KG = 250;
+
 function aggregate(records: MeasurementRecord[]): Point[] {
   const byDate = new Map<string, MeasurementRecord>();
   for (const r of records) {
+    if (!(r.weight_kg >= MIN_VALID_KG && r.weight_kg <= MAX_VALID_KG)) continue;
     const d = r.time.slice(0, 10);
     const prev = byDate.get(d);
     // 同一天取更晚的那条
@@ -40,6 +46,7 @@ export function TrendChart({
   targetKg: number | null;
   onEditTarget: () => void;
 }) {
+  const { t } = useI18n();
   const [width, setWidth] = useState(0);
 
   const pts = useMemo(() => aggregate(records), [records]);
@@ -92,11 +99,11 @@ export function TrendChart({
   return (
     <View style={styles.wrap}>
       <View style={styles.headRow}>
-        <Text style={styles.headTitle}>体重趋势</Text>
+        <Text style={styles.headTitle}>{t.trend}</Text>
         <View style={styles.headRight}>
-          <Text style={styles.headSub}>{unitLabel} · {pts.length} 天</Text>
+          <Text style={styles.headSub}>{unitLabel} · {pts.length} {t.days}</Text>
           <TouchableOpacity onPress={onEditTarget} style={styles.targetBtn}>
-            <Text style={styles.targetBtnText}>{targetKg !== null ? `目标 ${targetKg}` : '设目标'}</Text>
+            <Text style={styles.targetBtnText}>{targetKg !== null ? `${t.goalLabel} ${targetKg}` : t.setGoal}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -116,7 +123,7 @@ export function TrendChart({
             {layout.targetY !== null && (
               <>
                 <View style={[styles.targetLine, { top: layout.targetY }]} />
-                <Text style={[styles.targetLabel, { top: layout.targetY - 14 }]}>目标 {targetKg}</Text>
+                <Text style={[styles.targetLabel, { top: layout.targetY - 14 }]}>{t.goalLabel} {targetKg}</Text>
               </>
             )}
 
@@ -180,16 +187,16 @@ export function TrendChart({
 
       {/* 统计条 */}
       <View style={styles.statRow}>
-        <MiniStat label="起始" value={stats.first.toFixed(1)} unit="kg" />
-        <MiniStat label="最新" value={stats.last.toFixed(1)} unit="kg" color={C.primary} />
+        <MiniStat label={t.start} value={stats.first.toFixed(1)} unit="kg" />
+        <MiniStat label={t.latest} value={stats.last.toFixed(1)} unit="kg" color={C.primary} />
         <MiniStat
-          label="变化"
+          label={t.change}
           value={(stats.delta > 0 ? '+' : '') + stats.delta.toFixed(1)}
           unit="kg"
           color={stats.delta > 0.05 ? C.warn : stats.delta < -0.05 ? C.accent : C.textSub}
         />
         <MiniStat
-          label={toTarget === null ? '目标未设' : (toTarget <= 0 ? '已达标' : '距目标')}
+          label={toTarget === null ? t.goalUnset : (toTarget <= 0 ? t.goalReached : t.toGoal)}
           value={toTarget === null ? '—' : Math.abs(toTarget).toFixed(1)}
           unit={toTarget === null ? '' : 'kg'}
           color={toTarget === null ? C.textHint : toTarget <= 0 ? C.accent : C.textSub}

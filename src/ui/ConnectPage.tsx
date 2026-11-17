@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator, Clipboard, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { C, G, R, SH, T, S } from './theme';
+import { useI18n } from '../i18n';
 import { Card, SectionTitle, PrimaryButton, GhostButton, EmptyState, Badge } from './components';
 import type { BoundDevice } from '../storage/devices';
 import type { ScannedDeviceInfo } from '../ble/scaleBle';
@@ -23,6 +24,7 @@ export function ConnectPage({
   devices, scanning, scanned, boundNames, permDenied,
   onOpenDevice, onAddDevice, onManualConnect, onRequestPerm, onStopScan,
 }: Props) {
+  const { t } = useI18n();
   const [mac, setMac] = useState('');
   const [showManual, setShowManual] = useState(false);
 
@@ -33,22 +35,22 @@ export function ConnectPage({
           <View style={S.row}>
             <Text style={styles.warnIcon}>🔒</Text>
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.warnTitle}>需要蓝牙权限</Text>
-              <Text style={S.hint}>未授予「附近设备 / 位置」权限，无法扫描体脂秤</Text>
+              <Text style={styles.warnTitle}>{t.needPermTitle}</Text>
+              <Text style={S.hint}>{t.needPermDesc}</Text>
             </View>
           </View>
-          <PrimaryButton title="授予权限" onPress={onRequestPerm} colors={G.warm} style={{ marginTop: 14 }} />
+          <PrimaryButton title={t.grantPerm} onPress={onRequestPerm} colors={G.warm} style={{ marginTop: 14 }} />
         </Card>
       )}
 
       <SectionTitle
-        title={`我的设备`}
+        title={t.myDevices}
         right={<Badge text={String(devices.length)} color={C.primary} />}
       />
 
       {devices.length === 0 ? (
         <Card>
-          <EmptyState icon="⚖️" title="还没有绑定体脂秤" desc="扫描添加，或手动输入 MAC 地址直接连接" />
+          <EmptyState icon="⚖️" title={t.noDeviceTitle} desc={t.noDeviceDesc} />
         </Card>
       ) : (
         devices.map((d) => (
@@ -72,24 +74,24 @@ export function ConnectPage({
       )}
 
       <View style={{ height: 8 }} />
-      <SectionTitle title="添加设备" />
+      <SectionTitle title={t.addDevice} />
 
       <Card>
         {scanning ? (
           <>
             <View style={[S.row, { marginBottom: 10 }]}>
               <ActivityIndicator color={C.primary} />
-              <Text style={styles.scanText}>正在搜索新设备…</Text>
+              <Text style={styles.scanText}>{t.scanningNew}</Text>
             </View>
             <Text style={S.hint}>
-              只搜索尚未绑定的秤。请轻踩秤唤醒它（秤平时休眠不广播）。每 15 秒扫描一轮。
+              {t.scanningHint}
             </Text>
             {scanned.length > 0 && (
               <View style={styles.scanList}>
                 {scanned.slice(0, 8).map((s) => {
                   const boundName = boundNames[s.id];
-                  const isNamed = s.name && s.name !== '(无名)';
-                  const label = boundName || (isNamed ? s.name : s.id);
+                  const isNamed = !!s.name;
+                  const label = boundName || (isNamed ? s.name : t.none);
                   return (
                     <TouchableOpacity
                       key={s.id}
@@ -97,7 +99,7 @@ export function ConnectPage({
                       style={styles.scanRow}
                       onPress={() => {
                         Clipboard.setString(s.id);
-                        Alert.alert('已复制 MAC', s.id);
+                        Alert.alert(t.copiedMac, s.id);
                       }}>
                       <View style={[styles.dot, boundName && { backgroundColor: C.primary }]} />
                       <View style={{ flex: 1 }}>
@@ -105,7 +107,7 @@ export function ConnectPage({
                         {!boundName && isNamed && (
                           <Text style={styles.scanMac}>{s.id}</Text>
                         )}
-                        {boundName && <Text style={styles.scanBadge}>已绑定</Text>}
+                        {boundName && <Text style={styles.scanBadge}>{t.boundTag}</Text>}
                       </View>
                       <Text style={styles.scanRssi}>{s.rssi} dBm</Text>
                     </TouchableOpacity>
@@ -114,21 +116,21 @@ export function ConnectPage({
               </View>
             )}
             <View style={[S.row, { gap: 10, marginTop: 14 }]}>
-              <GhostButton title="停止扫描" onPress={onStopScan} style={{ flex: 1 }} />
-              <GhostButton title={showManual ? '收起' : '手动输入'} onPress={() => setShowManual((v) => !v)} style={{ flex: 1 }} />
+              <GhostButton title={t.stopScan} onPress={onStopScan} style={{ flex: 1 }} />
+              <GhostButton title={showManual ? t.collapse : t.manualInput} onPress={() => setShowManual((v) => !v)} style={{ flex: 1 }} />
             </View>
           </>
         ) : (
           <>
-            <PrimaryButton title="扫描并添加设备" onPress={onAddDevice} />
-            <GhostButton title={showManual ? '收起手动输入' : '手动输入 MAC 地址'} onPress={() => setShowManual((v) => !v)} style={{ marginTop: 10 }} />
+            <PrimaryButton title={t.scanAndAdd} onPress={onAddDevice} />
+            <GhostButton title={showManual ? t.collapse : t.manualMac} onPress={() => setShowManual((v) => !v)} style={{ marginTop: 10 }} />
           </>
         )}
 
         {showManual && (
           <View style={{ marginTop: 16 }}>
             <View style={S.divider} />
-            <Text style={S.label}>设备 MAC 地址</Text>
+            <Text style={S.label}>{t.macLabel}</Text>
             <TextInput
               value={mac}
               onChangeText={setMac}
@@ -139,10 +141,10 @@ export function ConnectPage({
               style={styles.input}
             />
             <Text style={[S.hint, { marginBottom: 10 }]}>
-              可在系统蓝牙设置中查看。已知 MAC 可直接连接，无需扫描。
+            {t.macHint}
             </Text>
             <PrimaryButton
-              title="直接连接"
+              title={t.connectDirect}
               onPress={() => onManualConnect(mac.trim())}
               disabled={!mac.trim()}
               colors={G.accent}

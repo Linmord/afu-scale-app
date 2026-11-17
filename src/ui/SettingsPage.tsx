@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { C, G, R, SH, T, S } from './theme';
-import { Card, PrimaryButton, GhostButton, Badge, SectionTitle, EmptyState } from './components';
+import { useI18n, LANGS } from '../i18n';
+import { Card, PrimaryButton, GhostButton, Badge, Sheet, SectionTitle, EmptyState } from './components';
 import type { BoundDevice } from '../storage/devices';
 
 const CREDITS: { name: string; url: string; desc: string }[] = [
@@ -49,6 +50,8 @@ export function SettingsPage({
   url, onUrlChange, units, onAddUnit, onRemoveUnit, onTestSync, testMsg, onPullRemote, remoteMsg,
   devices, onUnbind, debugLogs, onRefreshLogs, onClearLogs,
 }: Props) {
+  const { t, lang, pref, setLang } = useI18n();
+  const [langSheet, setLangSheet] = useState(false);
   const [newUnit, setNewUnit] = useState('');
   const [editUrl, setEditUrl] = useState(url);
   React.useEffect(() => { setEditUrl(url); }, [url]);
@@ -57,10 +60,27 @@ export function SettingsPage({
 
   return (
     <ScrollView style={styles.wrap} contentContainerStyle={{ paddingBottom: 90 }} showsVerticalScrollIndicator={false}>
+      {/* 语言设置 */}
+      <Card>
+        <SectionTitle title={t.language} right={<Badge text={lang.toUpperCase()} color={C.accent} />} />
+        <Text style={S.hint}>{t.languageHint}</Text>
+        <View style={[S.row, { gap: 10, marginTop: 12 }]}>
+          <TouchableOpacity activeOpacity={0.8} onPress={() => setLang('system')}
+            style={[styles.langChip, pref === 'system' && styles.langChipActive]}>
+            <Text style={[styles.langChipText, pref === 'system' && styles.langChipTextActive]}>{t.followSystem}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity activeOpacity={0.8} onPress={() => setLangSheet(true)}
+            style={[styles.langChip, pref !== 'system' && styles.langChipActive]}>
+            <Text style={[styles.langChipText, pref !== 'system' && styles.langChipTextActive]}>
+              {LANGS.find((l) => l.code === lang)?.native}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Card>
       {/* 同步设置 */}
       <Card>
-        <SectionTitle title="同步设置" right={<Badge text="HTTP POST" color={C.primary} />} />
-        <Text style={S.label}>推送地址</Text>
+        <SectionTitle title={t.syncSettings} right={<Badge text="HTTP POST" color={C.primary} />} />
+        <Text style={S.label}>{t.pushUrl}</Text>
         <TextInput
           value={editUrl}
           onChangeText={setEditUrl}
@@ -71,12 +91,12 @@ export function SettingsPage({
           autoCapitalize="none"
           autoCorrect={false}
         />
-        <Text style={S.hint}>电脑端需运行 server_receiver.py，保持同一 WiFi。地址可自由修改。</Text>
+        <Text style={S.hint}>{t.pushUrlHint}</Text>
         <View style={[S.row, { gap: 10, marginTop: 12 }]}>
-          <GhostButton title="保存地址" onPress={() => { onUrlChange(editUrl.trim()); }} style={{ flex: 1 }} />
-          <PrimaryButton title="测试连接" onPress={() => { onUrlChange(editUrl.trim()); onTestSync(); }} style={{ flex: 1 }} />
+          <GhostButton title={t.saveUrl} onPress={() => { onUrlChange(editUrl.trim()); }} style={{ flex: 1 }} />
+          <PrimaryButton title={t.testConn} onPress={() => { onUrlChange(editUrl.trim()); onTestSync(); }} style={{ flex: 1 }} />
         </View>
-        <GhostButton title="从电脑拉取数据" onPress={onPullRemote} style={{ marginTop: 10 }} />
+        <GhostButton title={t.pullFromPc} onPress={onPullRemote} style={{ marginTop: 10 }} />
         {remoteMsg ? (
           <View style={styles.msgBox}>
             <Text style={[styles.msgText, { color: C.accent }]}>{remoteMsg}</Text>
@@ -84,7 +104,7 @@ export function SettingsPage({
         ) : null}
         {testMsg ? (
           <View style={styles.msgBox}>
-            <Text style={[styles.msgText, testMsg.includes('失败') || testMsg.includes('异常') ? { color: C.danger } : { color: C.accent }]}>
+            <Text style={[styles.msgText, testMsg.includes('fail') ? { color: C.danger } : { color: C.accent }]}>
               {testMsg}
             </Text>
           </View>
@@ -93,8 +113,8 @@ export function SettingsPage({
 
       {/* 分配单位 */}
       <Card>
-        <SectionTitle title="分配单位" right={<Badge text={`${units.length}`} color={C.accent} />} />
-        <Text style={S.hint}>多人共用一台秤时，测量保存可选择归属</Text>
+        <SectionTitle title={t.unitsSection} right={<Badge text={`${units.length}`} color={C.accent} />} />
+        <Text style={S.hint}>{t.unitsHint}</Text>
         <View style={{ marginTop: 10 }}>
           {units.map((u) => (
             <View key={u} style={styles.row}>
@@ -104,7 +124,7 @@ export function SettingsPage({
               </View>
               {units.length > 1 && (
                 <TouchableOpacity onPress={() => onRemoveUnit(u)}>
-                  <Text style={styles.dangerText}>删除</Text>
+                  <Text style={styles.dangerText}>{t.delete}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -114,7 +134,7 @@ export function SettingsPage({
           <TextInput
             value={newUnit}
             onChangeText={setNewUnit}
-            placeholder="新单位名称"
+            placeholder={t.newUnitPlaceholder}
             placeholderTextColor={C.textHint}
             style={[styles.input, { flex: 1, marginTop: 0, marginBottom: 0 }]}
           />
@@ -128,9 +148,9 @@ export function SettingsPage({
 
       {/* 设备管理 */}
       <Card>
-        <SectionTitle title="已绑定设备" right={<Badge text={`${devices.length}`} color={C.primary} />} />
+        <SectionTitle title={t.boundDevices} right={<Badge text={`${devices.length}`} color={C.primary} />} />
         {devices.length === 0 ? (
-          <EmptyState icon="⚖️" title="暂无设备" desc="去连接页添加" />
+          <EmptyState icon="⚖️" title={t.noDeviceTitle} desc={t.addDevice} />
         ) : (
           devices.map((d) => (
             <View key={d.id} style={styles.row}>
@@ -139,7 +159,7 @@ export function SettingsPage({
                 <Text style={styles.rowSub}>{d.model} · {d.id.slice(0, 17)}</Text>
               </View>
               <TouchableOpacity onPress={() => onUnbind(d.id)}>
-                <Text style={styles.dangerText}>解绑</Text>
+                <Text style={styles.dangerText}>{t.unbind}</Text>
               </TouchableOpacity>
             </View>
           ))
@@ -149,17 +169,17 @@ export function SettingsPage({
       {/* 调试 */}
       <Card>
         <TouchableOpacity onPress={() => setShowDebug((v) => !v)} style={S.rowBetween}>
-          <Text style={T.h2}>调试日志</Text>
+          <Text style={T.h2}>{t.debugLog}</Text>
           <Text style={styles.chev}>{showDebug ? '▲' : '▼'}</Text>
         </TouchableOpacity>
         {showDebug && (
           <View style={{ marginTop: 12 }}>
             <View style={[S.row, { gap: 10, marginBottom: 10 }]}>
-              <GhostButton title="刷新" onPress={onRefreshLogs} style={{ flex: 1 }} />
-              <GhostButton title="清空" onPress={onClearLogs} danger style={{ flex: 1 }} />
+              <GhostButton title={t.refresh} onPress={onRefreshLogs} style={{ flex: 1 }} />
+              <GhostButton title={t.clear} onPress={onClearLogs} danger style={{ flex: 1 }} />
             </View>
             <ScrollView style={styles.logBox} nestedScrollEnabled>
-              <Text style={styles.logText}>{debugLogs || '（点刷新查看）'}</Text>
+              <Text style={styles.logText}>{debugLogs || t.none}</Text>
             </ScrollView>
           </View>
         )}
@@ -168,42 +188,42 @@ export function SettingsPage({
       {/* 关于 */}
       <Card>
         <TouchableOpacity onPress={() => setShowAbout((v) => !v)} style={S.rowBetween}>
-          <Text style={T.h2}>关于</Text>
+          <Text style={T.h2}>{t.about}</Text>
           <Text style={styles.chev}>{showAbout ? '▲' : '▼'}</Text>
         </TouchableOpacity>
         {showAbout && (
           <View style={{ marginTop: 12 }}>
             <LinearGradient colors={G.primary as never} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.aboutHero}>
               <Text style={styles.aboutLogo}>AFU</Text>
-              <Text style={styles.aboutApp}>体脂秤</Text>
+              <Text style={styles.aboutApp}>{t.brandSub}</Text>
               <Text style={styles.aboutVer}>v0.1.1 · com.aiyue.afuscale</Text>
             </LinearGradient>
 
             <View style={{ marginTop: 14 }}>
-              <Text style={styles.aboutLine}>适配型号：AFU-WL-TZ-A1（ICOMON / 蚂蚁阿福沃莱）</Text>
-              <Text style={styles.aboutLine}>数据仅存本机，不上传任何第三方</Text>
-              <Text style={styles.aboutLine}>体脂/肌肉等为本地 BIA 公式估算，仅供参考</Text>
-              <Text style={styles.aboutLine}>非小米/厂商官方应用</Text>
+              <Text style={styles.aboutLine}>{t.adaptation}</Text>
+              <Text style={styles.aboutLine}>{t.privacyLine}</Text>
+              <Text style={styles.aboutLine}>{t.estimateLine}</Text>
+              <Text style={styles.aboutLine}>{t.unofficial}</Text>
             </View>
 
             <View style={styles.dividerH} />
 
-            <Text style={styles.secTitle}>开源</Text>
-            <Text style={styles.aboutLine}>本项目开源，源码与构建（GitHub Actions）公开可查。</Text>
+            <Text style={styles.secTitle}>{t.openSource}</Text>
+            <Text style={styles.aboutLine}>{t.openSourceDesc}</Text>
 
             <TouchableOpacity
               activeOpacity={0.7}
               style={styles.repoCard}
               onPress={() => Linking.openURL('https://github.com/Linmord/afu-scale-app').catch(() => {})}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.repoLabel}>GitHub 仓库</Text>
+                <Text style={styles.repoLabel}>{t.ghRepo}</Text>
                 <Text style={styles.repoUrl}>github.com/Linmord/afu-scale-app</Text>
               </View>
-              <Text style={styles.repoGo}>打开 ›</Text>
+              <Text style={styles.repoGo}>{t.open} ›</Text>
             </TouchableOpacity>
 
-            <Text style={[styles.secTitle, { marginTop: 14 }]}>致谢</Text>
-            <Text style={styles.creditNote}>本项目的蓝牙协议解析与身体成分算法，参考并移植自以下开源项目：</Text>
+            <Text style={[styles.secTitle, { marginTop: 14 }]}>{t.credits}</Text>
+            <Text style={styles.creditNote}>{t.creditsDesc}</Text>
             {CREDITS.map((c) => (
               <TouchableOpacity
                 key={c.url}
@@ -223,6 +243,27 @@ export function SettingsPage({
           </View>
         )}
       </Card>
+
+
+      {/* 语言选择弹层 */}
+      <Sheet visible={langSheet} onClose={() => setLangSheet(false)} title={t.language}>
+        {LANGS.map((l) => (
+          <TouchableOpacity
+            key={l.code}
+            activeOpacity={0.8}
+            style={styles.langRow}
+            onPress={() => { setLang(l.code); setLangSheet(false); }}>
+            <Text style={styles.langFlag}>{l.flag}</Text>
+            <Text style={[styles.langRowText, lang === l.code && { color: C.primary, fontWeight: '700' }]}>{l.native}</Text>
+            {lang === l.code && <Text style={styles.langCheck}>✓</Text>}
+          </TouchableOpacity>
+        ))}
+        <TouchableOpacity style={styles.langRow} activeOpacity={0.8} onPress={() => { setLang('system'); setLangSheet(false); }}>
+          <Text style={styles.langFlag}>📱</Text>
+          <Text style={styles.langRowText}>{t.followSystem}</Text>
+        </TouchableOpacity>
+        <GhostButton title={t.close} onPress={() => setLangSheet(false)} style={{ marginTop: 10 }} />
+      </Sheet>
     </ScrollView>
   );
 }
@@ -255,6 +296,20 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: C.border,
   },
   logText: { fontSize: 11, color: C.textSub, fontFamily: 'monospace', lineHeight: 16 },
+  langChip: {
+    flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: R.md,
+    borderWidth: 1, borderColor: C.borderStrong, backgroundColor: C.surfaceAlt,
+  },
+  langChipActive: { borderColor: C.primary, backgroundColor: 'rgba(77,141,255,0.14)' },
+  langChipText: { fontSize: 13, color: C.textSub, fontWeight: '600' },
+  langChipTextActive: { color: C.primary },
+  langRow: {
+    flexDirection: 'row', alignItems: 'center', paddingVertical: 13,
+    borderTopWidth: 1, borderTopColor: C.border,
+  },
+  langFlag: { fontSize: 22, marginRight: 12 },
+  langRowText: { flex: 1, fontSize: 16, color: C.text },
+  langCheck: { color: C.accent, fontSize: 16, fontWeight: '700' },
   dividerH: { height: 1, backgroundColor: C.border, marginVertical: 16 },
   secTitle: { fontSize: 13, fontWeight: '700', color: C.textSub, marginBottom: 8, letterSpacing: 0.3 },
   repoCard: {

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { I18nProvider, useI18n } from './src/i18n';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import {
   startContinuousScan, stopScan, startMeasureSession, stopMeasureSession,
@@ -27,6 +28,14 @@ type Tab = 'connect' | 'data' | 'settings';
 type ConnState = 'idle' | 'connecting' | 'listening' | 'error';
 
 export default function App() {
+  return (
+    <I18nProvider>
+      <AppInner />
+    </I18nProvider>
+  );
+}
+
+function AppInner() {
   const [tab, setTab] = useState<Tab>('connect');
   const [devices, setDevices] = useState<BoundDevice[]>([]);
   const [openDevice, setOpenDevice] = useState<BoundDevice | null>(null);
@@ -46,6 +55,7 @@ export default function App() {
   const [syncing, setSyncing] = useState(false);
   const [dbgLogs, setDbgLogs] = useState('');
   const [permDenied, setPermDenied] = useState(false);
+  const { t } = useI18n();
 
   const sessionRef = useRef<MeasureSession | null>(null);
 
@@ -125,7 +135,7 @@ export default function App() {
   const handleManualConnect = useCallback(async (raw: string) => {
     const mac = raw.toUpperCase().replace(/[^0-9A-F]/g, '').match(/.{2}/g)?.join(':') || raw.toUpperCase();
     if (!/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/.test(mac)) {
-      setConnDetail('MAC 格式不正确，应为 XX:XX:XX:XX:XX:XX');
+      setConnDetail(t.macFormat);
       return;
     }
     const list = await addDevice({ id: mac, model: 'AFU-WL-TZ-A1' });
@@ -181,9 +191,9 @@ export default function App() {
         profile: { sex: DEFAULT_PROFILE.sex, age: DEFAULT_PROFILE.age, height: DEFAULT_PROFILE.height },
       });
       await refreshAll();
-      setConnDetail('已保存到「' + unit + '」');
+      setConnDetail(`${t.saved} ${unit}`);
     } catch (e) {
-      setConnDetail('保存失败: ' + (e instanceof Error ? e.message : String(e)));
+      setConnDetail(t.saveFail + ': ' + (e instanceof Error ? e.message : String(e)));
     }
   }, [latest, refreshAll]);
 
@@ -194,25 +204,25 @@ export default function App() {
     setSyncing(true);
     setSyncMsg('');
     try {
-      if (list.length === 0) { setSyncMsg('请先勾选要推送的记录'); return; }
+      if (list.length === 0) { setSyncMsg(t.selectFirst); return; }
       const cfg: SyncConfig = { url: syncUrl, enabled: true, timeoutMs: 8000 };
       const tc = await testConnection(syncUrl);
       if (!tc.ok) {
-        setSyncMsg(`推送失败：电脑端不可达（${tc.ms}ms）\n${tc.detail}`);
+        setSyncMsg(`${t.pushFail} (${tc.ms}ms)\n${tc.detail}`);
         return;
       }
-      setSyncMsg(`服务可达（${tc.ms}ms），推送 ${list.length} 条...`);
+      setSyncMsg(`${t.connOk} (${tc.ms}ms) — ${list.length}…`);
       const res = await syncRecords(list, cfg);
       if (res.ok) {
         // 标记为已推送，避免重复推送（只标记本次推送成功的 id）
         const updated = await markRecordsSynced(list.map((r) => r.id));
         setRecords(updated);
-        setSyncMsg(`推送成功：${res.sent} 条（${res.ms ?? 0}ms）${res.sent < list.length ? `，服务端跳过重复 ${list.length - res.sent} 条` : ''}`);
+        setSyncMsg(`${t.pushOk}: ${res.sent} (${res.ms ?? 0}ms)`);
       } else {
-        setSyncMsg(`推送失败：${res.error}`);
+        setSyncMsg(`${t.pushFail}: ${res.error}`);
       }
     } catch (e) {
-      setSyncMsg('推送异常：' + (e instanceof Error ? e.message : String(e)));
+      setSyncMsg(t.pushFail + ': ' + (e instanceof Error ? e.message : String(e)));
     } finally {
       setSyncing(false);   // 无论成功失败都必须复位，避免卡在「推送中」
     }
@@ -220,14 +230,14 @@ export default function App() {
 
   /** 设置页测试连接（只测连通，不动数据） */
   const handleTestConn = useCallback(async () => {
-    setTestMsg('测试中...');
+    setTestMsg(t.testing);
     try {
       const tc = await testConnection(syncUrl);
       setTestMsg(tc.ok
-        ? `连接正常（${tc.ms}ms，${tc.detail}）· 服务地址可用`
-        : `连接失败（${tc.ms}ms）：${tc.detail}`);
+        ? `${t.connOk} (${tc.ms}ms, ${tc.detail})`
+        : `${t.connFail} (${tc.ms}ms): ${tc.detail}`);
     } catch (e) {
-      setTestMsg('测试异常：' + (e instanceof Error ? e.message : String(e)));
+      setTestMsg(t.connFail + ': ' + (e instanceof Error ? e.message : String(e)));
     }
   }, [syncUrl]);
 
@@ -244,15 +254,15 @@ export default function App() {
 
   /** 从电脑端拉取记录并合并到本地 */
   const handlePullRemote = useCallback(async () => {
-    setRemoteMsg('拉取中...');
+    setRemoteMsg(t.pulling);
     try {
       const res = await fetchRemoteRecords(syncUrl);
-      if (!res.ok) { setRemoteMsg('拉取失败：' + (res.error || '未知')); return; }
+      if (!res.ok) { setRemoteMsg(`${t.connFail}: ${res.error || '?'}`); return; }
       const merged = await mergeRemoteRecords(res.records);
       setRecords(merged.list);
-      setRemoteMsg(`拉取完成：远端 ${res.records.length} 条，新增 ${merged.added} 条，标记已推送 ${merged.marked} 条`);
+      setRemoteMsg(`${t.pullResult}: +${merged.added} / ✓${merged.marked} (${res.records.length})`);
     } catch (e) {
-      setRemoteMsg('拉取异常：' + (e instanceof Error ? e.message : String(e)));
+      setRemoteMsg(t.connFail + ': ' + (e instanceof Error ? e.message : String(e)));
     }
   }, [syncUrl]);
 
@@ -336,9 +346,9 @@ export default function App() {
   );
 
   const TAB_META: [Tab, string, string][] = [
-    ['connect', '设备', '⚖'],
-    ['data', '数据', '◱'],
-    ['settings', '设置', '⚙'],
+    ['connect', t.tabDevice, '⚖'],
+    ['data', t.tabData, '◱'],
+    ['settings', t.tabSettings, '⚙'],
   ];
 
   return (
@@ -349,7 +359,7 @@ export default function App() {
         {!openDevice && (
           <View style={styles.topBar}>
             <Text style={styles.brand}>AFU</Text>
-            <Text style={styles.brandSub}>体脂秤</Text>
+            <Text style={styles.brandSub}>{t.brandSub}</Text>
           </View>
         )}
 
