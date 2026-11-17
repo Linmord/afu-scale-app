@@ -73,7 +73,7 @@ export function startContinuousScan(handlers: {
         scanCount += 1;
         const name = device.name || '';
         const info: ScannedDeviceInfo = {
-          id: device.id, name: name || '(无名)', rssi: device.rssi ?? -100,
+          id: device.id, name: name || '', rssi: device.rssi ?? -100,
           manufacturerData: typeof device.manufacturerData === 'string' ? device.manufacturerData : undefined,
           serviceUuids: (device.serviceUUIDs || []).join(','),
           ts: Date.now(),

@@ -91,7 +91,7 @@ export function ConnectPage({
                 {scanned.slice(0, 8).map((s) => {
                   const boundName = boundNames[s.id];
                   const isNamed = !!s.name;
-                  const label = boundName || (isNamed ? s.name : t.none);
+                  const label = boundName || (isNamed ? s.name : s.id);
                   return (
                     <TouchableOpacity
                       key={s.id}
