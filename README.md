@@ -7,6 +7,14 @@
 - 包名：**com.aiyue.afuscale**
 - 平台：**Android**（Expo / React Native，iOS 与桌面可复用同一套代码）
 
+
+## Demo
+
+| 设备页（连接 + 扫描） |
+| :---: |
+| ![Device Page](docs/screenshots/demo-device.png) |
+
+
 ---
 
 ## 功能
