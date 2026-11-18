@@ -1,3 +1,14 @@
+> [!IMPORTANT]
+> **本项目已停止维护（2026-11）**
+>
+> Flutter 重写版已发布，扫描速度、界面与稳定性大幅改进。
+> 同一台手机同一杆秤：旧版扫描约 7 分钟，新版 **1 秒内**。
+>
+> ### → 请使用新仓库：[Linmord/afu-scale-flutter](https://github.com/Linmord/afu-scale-flutter)
+>
+> 本仓库保留为历史存档，不再接受功能更新与问题修复。
+
+---
 # AFU 体脂秤
 
 **AFU** 是一款本地优先（local-first）的蓝牙体脂秤应用，适配 **蚂蚁阿福沃莱 AFU-WL-TZ-A1**（ICOMON 制造）。它不依赖手机厂商 App，直接在 Android 上连接体脂秤、记录体重与身体成分、并与电脑双向同步。

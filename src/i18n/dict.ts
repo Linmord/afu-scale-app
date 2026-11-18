@@ -17,12 +17,17 @@ export interface Strings {
   scanAndAdd: string; manualMac: string;
   scanningNew: string; scanningHint: string;
   stopScan: string; manualInput: string; collapse: string;
+  expandMore: string;
+  filterByRange: string; customRange: string; rangeToday: string; range24h: string;
+  range7d: string; range30d: string; rangeAll: string; rangeHint: string;
+  rangeFrom: string; rangeTo: string; applyRange: string;
   macLabel: string; macHint: string; connectDirect: string;
   copiedMac: string; boundTag: string;
   needPermTitle: string; needPermDesc: string; grantPerm: string;
 
   // 设备详情
-  deviceInfo: string; devName: string; devModel: string;
+  deviceInfo: string;
+  deviceInfoTitle: string; deviceInfoHint: string; devName: string; devModel: string;
   devMac: string; devBoundAt: string;
   connectState: string; stateConnecting: string; stateConnected: string;
   stateError: string; stateIdle: string;
@@ -59,6 +64,24 @@ export interface Strings {
   openSource: string; openSourceDesc: string; ghRepo: string;
   credits: string; creditsDesc: string; creditsLicense: string;
   language: string; languageHint: string; followSystem: string;
+  unitSection2: string; unitDisplayHint: string;
+  unitKg: string; unitLb: string; unitJin: string;
+  profileTitle: string; profileHint: string; profileRequired: string; profileSave: string;
+  sexLabel: string; sexMale: string; sexFemale: string;
+  ageLabel: string; heightLabel: string; saving: string;
+  appTagline: string;
+  historySynced: string;
+  pendingTitle: string; pendingHint: string; pendingEmpty: string; pendingEmptyHint: string;
+  assignTo: string; discardSelected: string; selectAll: string; deselectAll: string;
+  phaseWeighing: string; phaseImpedance: string; phaseDone: string;
+  batteryLabel: string; firmwareLabel: string; manufacturerLabel: string; modelLabel: string;
+  pendingEntry: string;
+  transferTo: string; transferHint: string;
+  optional: string;
+  nameLabel: string; namePlaceholder: string;
+  profilesTitle: string; profilesHint: string; addProfile: string; editProfile: string;
+  activeProfileLabel: string; weightLabel: string; lowWeightTag: string;
+  impedanceFailed: string; // 「本次未测得体阻抗」
   macFormat: string; saved: string; saveFail: string; selectFirst: string;
 
   // 状态/提示
@@ -80,15 +103,15 @@ const ja: Strings = {
   noDeviceDesc: 'スキャンして追加するか、MAC アドレスを直接入力してください',
   scanAndAdd: 'スキャンして追加', manualMac: 'MAC アドレスを入力',
   scanningNew: '新しいデバイスを検索中…',
-  scanningHint: '未登録の計りのみ検索します。計りは通常スリープしているため、軽く踏んで起こしてください。15 秒ごとにスキャンします。',
-  stopScan: 'スキャン停止', manualInput: 'MAC を入力', collapse: '閉じる',
+  scanningHint: '初回登録では、体脂計を軽く踏んで画面を点灯させ、そのまま動かさずに置いてください。計りが起動してアドバタイズを始めるまで約3〜5分かかります。蓝牙MACアドレスをご存じでしたら、手動接続をお勧めします。',
+  stopScan: 'スキャン停止', manualInput: 'MAC を入力', collapse: '閉じる', expandMore: 'もっと見る', filterByRange: '期間', customRange: 'カスタム', rangeToday: '今日', range24h: '24時間', range7d: '7日', range30d: '30日', rangeAll: 'すべて', rangeHint: '開始日と終了日を入力、または下の日付をタップ', rangeFrom: '開始日', rangeTo: '終了日', applyRange: '適用',
   macLabel: 'デバイスの MAC アドレス', macHint: 'システムの Bluetooth 設定で確認できます。MAC が分かれば直接接続できます。',
   connectDirect: 'このアドレスに接続', copiedMac: 'MAC をコピーしました', boundTag: '登録済み',
   needPermTitle: 'Bluetooth 権限が必要です',
   needPermDesc: '「付近のデバイス / 位置情報」が未許可のためスキャンできません',
   grantPerm: '権限を許可',
 
-  deviceInfo: 'デバイス情報', devName: '名前', devModel: 'モデル',
+  deviceInfo: 'デバイス情報', deviceInfoTitle: 'デバイス情報', deviceInfoHint: '接続時に自動取得・ローカル保存（次回同期時に更新）', devName: '名前', devModel: 'モデル',
   devMac: 'MAC', devBoundAt: '登録日',
   connectState: '接続状態', stateConnecting: '接続中…', stateConnected: '接続済み',
   stateError: '接続エラー', stateIdle: '未接続',
@@ -128,7 +151,21 @@ const ja: Strings = {
   credits: '謝辞', creditsDesc: 'Bluetooth プロトコル解析と体組成アルゴリズムは、以下のオープンソースプロジェクトを参考・移植しています：',
   creditsLicense: '各プロジェクトは MIT ライセンスです。本アプリも同じオープンソースの精神に従います。',
   language: '言語', languageHint: 'システム言語に追従するか、手動で選択できます', followSystem: 'システムに追従',
- macFormat: 'MAC の形式が不正です (XX:XX:XX:XX:XX:XX)', saved: '保存済み:', saveFail: '保存失敗', selectFirst: '送信する項目を選択してください',
+ unitSection2: '単位', unitDisplayHint: '表示・送信する単位（保存は常に kg）', unitKg: 'kg（キログラム）', unitLb: 'lb（ポンド）', unitJin: '斤（中国の両）',
+profileTitle: 'プロフィール設定', profileHint: '体脂肪率の計算に必要です（性別・年齢・身長）', profileRequired: 'すべて入力してください', profileSave: '保存して開始',
+sexLabel: '性別', sexMale: '男性', sexFemale: '女性',
+ageLabel: '年齢', heightLabel: '身長 (cm)', saving: '保存中…',
+appTagline: '体重・体組成計',
+historySynced: '計りから履歴を{n}件取り込みました', impedanceFailed: '今回の体阻抗は取得できませんでした', macFormat: 'MAC の形式が不正です (XX:XX:XX:XX:XX:XX)', saved: '保存済み:', saveFail: '保存失敗', selectFirst: '送信する項目を選択してください',
+pendingTitle: '未割り当ての履歴', pendingHint: '計りから取り込んだ測定です。誰のデータか選んでください', pendingEmpty: '未処理の履歴はありません', pendingEmptyHint: '計りに新しい測定がたまると、ここに表示されます',
+assignTo: '割り当て先', discardSelected: '選択を破棄', selectAll: 'すべて選択', deselectAll: '選択解除',
+phaseWeighing: '体重測定中', phaseImpedance: '体阻抗測定中', phaseDone: '測定完了',
+batteryLabel: 'バッテリー', firmwareLabel: 'ファームウェア', manufacturerLabel: 'メーカー', modelLabel: 'モデル',
+pendingEntry: '未割り当て履歴', transferTo: '所有者を変更', transferHint: '選択したデータを誰に割り当てますか？（体成分は再計算が必要です）',
+optional: '（任意）',
+nameLabel: '名前', namePlaceholder: '例：本人',
+profilesTitle: 'ユーザー管理', profilesHint: '計りに送信する身体データです。接続に使うユーザーを選べます', addProfile: 'ユーザーを追加', editProfile: '編集',
+activeProfileLabel: '接続に使うユーザー', weightLabel: '体重 (kg)', lowWeightTag: '軽踏み？',
 
   connecting: '接続中…', testing: 'テスト中…', pulling: '取得中…',
   connOk: '接続 OK', connFail: '接続失敗', pushOk: '送信成功', pushFail: '送信失敗',
@@ -148,15 +185,15 @@ const zhHans: Strings = {
   noDeviceDesc: '扫描添加，或手动输入 MAC 地址直接连接',
   scanAndAdd: '扫描并添加设备', manualMac: '手动输入 MAC 地址',
   scanningNew: '正在搜索新设备…',
-  scanningHint: '只搜索尚未绑定的秤。秤平时休眠不广播，请轻踩唤醒。每 15 秒扫描一轮。',
-  stopScan: '停止扫描', manualInput: '手动输入', collapse: '收起',
+  scanningHint: '首次绑定请将体脂秤轻踩亮屏后放置不动，需要3-5分钟左右等待体脂秤唤醒发起广播，若您了解设备的蓝牙MAC地址建议直接手动连接。',
+  stopScan: '停止扫描', manualInput: '手动输入', collapse: '收起', expandMore: '展开更多', filterByRange: '时间范围', customRange: '自定义', rangeToday: '今天', range24h: '24H', range7d: '7天', range30d: '30天', rangeAll: '全部', rangeHint: '输入起止日期，或点选下方日期', rangeFrom: '开始日期', rangeTo: '结束日期', applyRange: '应用',
   macLabel: '设备 MAC 地址', macHint: '可在系统蓝牙设置中查看。已知 MAC 可直接连接，无需扫描。',
   connectDirect: '直接连接', copiedMac: '已复制 MAC', boundTag: '已绑定',
   needPermTitle: '需要蓝牙权限',
   needPermDesc: '未授予「附近设备 / 位置」权限，无法扫描体脂秤',
   grantPerm: '授予权限',
 
-  deviceInfo: '设备信息', devName: '名称', devModel: '型号',
+  deviceInfo: '设备信息', deviceInfoTitle: '设备信息', deviceInfoHint: '连接后自动读取并本地缓存，下次同步时更新', devName: '名称', devModel: '型号',
   devMac: 'MAC', devBoundAt: '绑定时间',
   connectState: '连接状态', stateConnecting: '连接中…', stateConnected: '已连接',
   stateError: '连接失败', stateIdle: '未连接',
@@ -196,7 +233,21 @@ const zhHans: Strings = {
   credits: '致谢', creditsDesc: '本项目的蓝牙协议解析与身体成分算法，参考并移植自以下开源项目：',
   creditsLicense: '以上项目均为 MIT 许可。本应用遵循同样的开源精神。',
   language: '语言', languageHint: '可跟随系统语言，也可手动切换', followSystem: '跟随系统',
- macFormat: 'MAC 格式不正确，应为 XX:XX:XX:XX:XX:XX', saved: '已保存到', saveFail: '保存失败', selectFirst: '请先勾选要推送的记录',
+ unitSection2: '单位', unitDisplayHint: '显示与发送给秤的单位（数据库始终以 kg 存）', unitKg: 'kg（公斤）', unitLb: 'lb（磅）', unitJin: '斤',
+profileTitle: '身体数据', profileHint: '体脂率计算必需（性别 / 年龄 / 身高），未填写则无法得到准确体脂', profileRequired: '请完整填写后再开始', profileSave: '保存并开始',
+sexLabel: '性别', sexMale: '男', sexFemale: '女',
+ageLabel: '年龄', heightLabel: '身高 (cm)', saving: '保存中…',
+appTagline: '体脂秤',
+historySynced: '已从秤上补收 {n} 条历史记录', impedanceFailed: '本次未测得体阻抗', macFormat: 'MAC 格式不正确，应为 XX:XX:XX:XX:XX:XX', saved: '已保存到', saveFail: '保存失败', selectFirst: '请先勾选要推送的记录',
+pendingTitle: '待分配历史', pendingHint: '从秤上补收的测量记录，请选择归属单位', pendingEmpty: '暂无待处理记录', pendingEmptyHint: '秤上有新测量时会出现在这里',
+assignTo: '分配给', discardSelected: '丢弃所选', selectAll: '全选', deselectAll: '取消全选',
+phaseWeighing: '正在测量', phaseImpedance: '阻抗测量', phaseDone: '测量完成',
+batteryLabel: '电量', firmwareLabel: '固件版本', manufacturerLabel: '制造商', modelLabel: '型号',
+pendingEntry: '待分配历史', transferTo: '转移给', transferHint: '把选中的数据分配给谁？（转移后体成分需重新测量）',
+optional: '（可选）',
+nameLabel: '名字', namePlaceholder: '例如：本人',
+profilesTitle: '用户管理', profilesHint: '发送给秤的身体数据，可选择用哪个用户连接', addProfile: '添加用户', editProfile: '编辑',
+activeProfileLabel: '连接秤使用的用户', weightLabel: '体重 (kg)', lowWeightTag: '疑似轻踩',
 
   connecting: '连接中…', testing: '测试中…', pulling: '拉取中…',
   connOk: '连接正常', connFail: '连接失败', pushOk: '推送成功', pushFail: '推送失败',
@@ -216,15 +267,15 @@ const zhHant: Strings = {
   noDeviceDesc: '掃描新增，或手動輸入 MAC 位址直接連線',
   scanAndAdd: '掃描並新增裝置', manualMac: '手動輸入 MAC 位址',
   scanningNew: '正在搜尋新裝置…',
-  scanningHint: '只搜尋尚未綁定的體脂計。體脂計平時休眠不廣播，請輕踩喚醒。每 15 秒掃描一輪。',
-  stopScan: '停止掃描', manualInput: '手動輸入', collapse: '收合',
+  scanningHint: '首次綁定請將體脂秤輕踩亮屏後放置不動，需要3-5分鐘左右等待體脂秤喚醒發起廣播，若您了解設備的藍牙MAC地址建議直接手動連接。',
+  stopScan: '停止掃描', manualInput: '手動輸入', collapse: '收合', expandMore: '展開更多', filterByRange: '時間範圍', customRange: '自訂', rangeToday: '今天', range24h: '24H', range7d: '7天', range30d: '30天', rangeAll: '全部', rangeHint: '輸入起止日期，或點選下方日期', rangeFrom: '開始日期', rangeTo: '結束日期', applyRange: '應用',
   macLabel: '裝置 MAC 位址', macHint: '可在系統藍牙設定中查看。已知 MAC 可直接連線，無需掃描。',
   connectDirect: '直接連線', copiedMac: '已複製 MAC', boundTag: '已綁定',
   needPermTitle: '需要藍牙權限',
   needPermDesc: '未授予「鄰近裝置 / 位置」權限，無法掃描體脂計',
   grantPerm: '授予權限',
 
-  deviceInfo: '裝置資訊', devName: '名稱', devModel: '型號',
+  deviceInfo: '裝置資訊', deviceInfoTitle: '裝置資訊', deviceInfoHint: '連線後自動讀取並本機快取，下次同步時更新', devName: '名稱', devModel: '型號',
   devMac: 'MAC', devBoundAt: '綁定時間',
   connectState: '連線狀態', stateConnecting: '連線中…', stateConnected: '已連線',
   stateError: '連線失敗', stateIdle: '未連線',
@@ -264,7 +315,21 @@ const zhHant: Strings = {
   credits: '致謝', creditsDesc: '本專案的藍牙協定解析與身體組成演算法，參考並移植自以下開源專案：',
   creditsLicense: '以上專案均為 MIT 授權。本應用遵循同樣的開源精神。',
   language: '語言', languageHint: '可跟隨系統語言，也可手動切換', followSystem: '跟隨系統',
- macFormat: 'MAC 格式錯誤，應為 XX:XX:XX:XX:XX:XX', saved: '已儲存到', saveFail: '儲存失敗', selectFirst: '請先勾選要推送的記錄',
+ unitSection2: '單位', unitDisplayHint: '顯示與發送給秤的單位（資料庫始終以 kg 存）', unitKg: 'kg（公斤）', unitLb: 'lb（磅）', unitJin: '斤',
+profileTitle: '身體資料', profileHint: '體脂率計算必需（性別 / 年齡 / 身高），未填寫則無法得到準確體脂', profileRequired: '請完整填寫後再開始', profileSave: '儲存並開始',
+sexLabel: '性別', sexMale: '男', sexFemale: '女',
+ageLabel: '年齡', heightLabel: '身高 (cm)', saving: '儲存中…',
+appTagline: '體脂秤',
+historySynced: '已從秤上補收 {n} 筆歷史紀錄', impedanceFailed: '本次未測得體阻抗', macFormat: 'MAC 格式錯誤，應為 XX:XX:XX:XX:XX:XX', saved: '已儲存到', saveFail: '儲存失敗', selectFirst: '請先勾選要推送的記錄',
+pendingTitle: '待分配歷史', pendingHint: '從秤上補收的測量紀錄，請選擇歸屬單位', pendingEmpty: '暫無待處理紀錄', pendingEmptyHint: '秤上有新測量時會出現在這裡',
+assignTo: '分配給', discardSelected: '丟棄所選', selectAll: '全選', deselectAll: '取消全選',
+phaseWeighing: '正在測量', phaseImpedance: '阻抗測量', phaseDone: '測量完成',
+batteryLabel: '電量', firmwareLabel: '韌體版本', manufacturerLabel: '製造商', modelLabel: '型號',
+pendingEntry: '待分配歷史', transferTo: '轉移給', transferHint: '把選取的資料分配給誰？（轉移後體成分需重新測量）',
+optional: '（可選）',
+nameLabel: '名字', namePlaceholder: '例如：本人',
+profilesTitle: '使用者管理', profilesHint: '發送給秤的身體資料，可選擇用哪個使用者連線', addProfile: '新增使用者', editProfile: '編輯',
+activeProfileLabel: '連線秤使用的使用者', weightLabel: '體重 (kg)', lowWeightTag: '疑似輕踩',
 
   connecting: '連線中…', testing: '測試中…', pulling: '拉取中…',
   connOk: '連線正常', connFail: '連線失敗', pushOk: '推送成功', pushFail: '推送失敗',
@@ -284,15 +349,15 @@ const de: Strings = {
   noDeviceDesc: 'Scannen und hinzufügen oder MAC-Adresse manuell eingeben',
   scanAndAdd: 'Scannen & hinzufügen', manualMac: 'MAC-Adresse eingeben',
   scanningNew: 'Suche nach neuen Geräten…',
-  scanningHint: 'Es wird nur nach nicht verknüpften Waagen gesucht. Die Waage schläft meist – kurz antippen zum Aufwecken. Scan alle 15 Sekunden.',
-  stopScan: 'Scan stoppen', manualInput: 'Manuell', collapse: 'Schließen',
+  scanningHint: 'Bei der ersten Kopplung die Waage kurz antippen, bis das Display angeht, dann ruhig liegen lassen. Es dauert ca. 3–5 Minuten, bis sie aufwacht und sendet. Wenn Sie die Bluetooth-MAC-Adresse kennen, empfiehlt sich die manuelle Verbindung.',
+  stopScan: 'Scan stoppen', manualInput: 'Manuell', collapse: 'Schließen', expandMore: 'Mehr anzeigen', filterByRange: 'Zeitraum', customRange: 'Benutzerdefiniert', rangeToday: 'Heute', range24h: '24H', range7d: '7 Tage', range30d: '30 Tage', rangeAll: 'Alle', rangeHint: 'Start- und Enddatum eingeben oder unten wählen', rangeFrom: 'Startdatum', rangeTo: 'Enddatum', applyRange: 'Anwenden',
   macLabel: 'MAC-Adresse des Geräts', macHint: 'In den Bluetooth-Einstellungen sichtbar. Mit bekannter MAC ist kein Scan nötig.',
   connectDirect: 'Direkt verbinden', copiedMac: 'MAC kopiert', boundTag: 'Verknüpft',
   needPermTitle: 'Bluetooth-Berechtigung nötig',
   needPermDesc: 'Ohne „Geräte in der Nähe / Standort“ ist kein Scan möglich',
   grantPerm: 'Berechtigung erteilen',
 
-  deviceInfo: 'Geräteinfo', devName: 'Name', devModel: 'Modell',
+  deviceInfo: 'Geräteinfo', deviceInfoTitle: 'Geräteinfo', deviceInfoHint: 'Beim Verbinden gelesen und lokal gespeichert', devName: 'Name', devModel: 'Modell',
   devMac: 'MAC', devBoundAt: 'Verknüpft am',
   connectState: 'Verbindung', stateConnecting: 'Verbinde…', stateConnected: 'Verbunden',
   stateError: 'Verbindungsfehler', stateIdle: 'Nicht verbunden',
@@ -332,7 +397,21 @@ const de: Strings = {
   credits: 'Danksagung', creditsDesc: 'Bluetooth-Protokollanalyse und Körperzusammensetzungs-Algorithmen basieren auf folgenden Open-Source-Projekten:',
   creditsLicense: 'Alle Projekte stehen unter MIT-Lizenz. Diese App folgt demselben Open-Source-Gedanken.',
   language: 'Sprache', languageHint: 'Systemsprache folgen oder manuell wählen', followSystem: 'System folgen',
- macFormat: 'MAC-Format ungültig (XX:XX:XX:XX:XX:XX)', saved: 'Gespeichert:', saveFail: 'Speichern fehlgeschlagen', selectFirst: 'Bitte Einträge zum Senden auswählen',
+ unitSection2: 'Einheit', unitDisplayHint: 'Anzeige- und Sende-Einheit (DB speichert immer kg)', unitKg: 'kg (Kilogramm)', unitLb: 'lb (Pfund)', unitJin: 'Jin (chinesisches Pfund)',
+profileTitle: 'Körperdaten', profileHint: 'Für die Körperfettberechnung nötig (Geschlecht/Alter/Größe)', profileRequired: 'Bitte vollständig ausfüllen', profileSave: 'Speichern & starten',
+sexLabel: 'Geschlecht', sexMale: 'Männlich', sexFemale: 'Weiblich',
+ageLabel: 'Alter', heightLabel: 'Größe (cm)', saving: 'Speichern…',
+appTagline: 'Körperanalysewaage',
+historySynced: '{n} Verlaufsmessungen von der Waage übernommen', impedanceFailed: 'Keine Impedanzmessung erhalten', macFormat: 'MAC-Format ungültig (XX:XX:XX:XX:XX:XX)', saved: 'Gespeichert:', saveFail: 'Speichern fehlgeschlagen', selectFirst: 'Bitte Einträge zum Senden auswählen',
+pendingTitle: 'Nicht zugeordnete Messungen', pendingHint: 'Von der Waage übernommene Messungen – bitte Person zuordnen', pendingEmpty: 'Keine offenen Messungen', pendingEmptyHint: 'Neue Messungen der Waage erscheinen hier',
+assignTo: 'Zuordnen an', discardSelected: 'Auswahl verwerfen', selectAll: 'Alle wählen', deselectAll: 'Auswahl aufheben',
+phaseWeighing: 'Wiegen läuft', phaseImpedance: 'Impedanzmessung', phaseDone: 'Messung fertig',
+batteryLabel: 'Akku', firmwareLabel: 'Firmware', manufacturerLabel: 'Hersteller', modelLabel: 'Modell',
+pendingEntry: 'Offene Messungen', transferTo: 'Übertragen an', transferHint: 'Ausgewählte Daten wem zuordnen? (Körperfett neu messen nötig)',
+optional: '(optional)',
+nameLabel: 'Name', namePlaceholder: 'z. B. Ich',
+profilesTitle: 'Benutzerverwaltung', profilesHint: 'Körperdaten für die Waage – Benutzer für die Verbindung wählen', addProfile: 'Benutzer hinzufügen', editProfile: 'Bearbeiten',
+activeProfileLabel: 'Benutzer für Verbindung', weightLabel: 'Gewicht (kg)', lowWeightTag: 'Leichter Tritt?',
 
   connecting: 'Verbinde…', testing: 'Teste…', pulling: 'Lade…',
   connOk: 'Verbindung OK', connFail: 'Verbindung fehlgeschlagen', pushOk: 'Senden erfolgreich', pushFail: 'Senden fehlgeschlagen',
@@ -352,15 +431,15 @@ const en: Strings = {
   noDeviceDesc: 'Scan to add, or enter the MAC address manually',
   scanAndAdd: 'Scan & Add Device', manualMac: 'Enter MAC Address',
   scanningNew: 'Searching for new devices…',
-  scanningHint: 'Only unbound scales are searched. The scale usually sleeps — tap it lightly to wake. Scans every 15 seconds.',
-  stopScan: 'Stop Scan', manualInput: 'Manual', collapse: 'Collapse',
+  scanningHint: 'For first-time pairing, lightly tap the scale to light the screen and leave it still. It takes about 3-5 minutes to wake and start advertising. If you know the Bluetooth MAC address, manual connection is recommended.',
+  stopScan: 'Stop Scan', manualInput: 'Manual', collapse: 'Collapse', expandMore: 'Show more', filterByRange: 'Time Range', customRange: 'Custom', rangeToday: 'Today', range24h: '24H', range7d: '7 days', range30d: '30 days', rangeAll: 'All', rangeHint: 'Enter start/end date or tap a date below', rangeFrom: 'Start date', rangeTo: 'End date', applyRange: 'Apply',
   macLabel: 'Device MAC Address', macHint: 'Visible in system Bluetooth settings. A known MAC needs no scan.',
   connectDirect: 'Connect Directly', copiedMac: 'MAC copied', boundTag: 'Bound',
   needPermTitle: 'Bluetooth permission required',
   needPermDesc: 'Scanning needs "Nearby devices / Location" permission',
   grantPerm: 'Grant Permission',
 
-  deviceInfo: 'Device Info', devName: 'Name', devModel: 'Model',
+  deviceInfo: 'Device Info', deviceInfoTitle: 'Device Info', deviceInfoHint: 'Read on connect and cached locally', devName: 'Name', devModel: 'Model',
   devMac: 'MAC', devBoundAt: 'Bound on',
   connectState: 'Connection', stateConnecting: 'Connecting…', stateConnected: 'Connected',
   stateError: 'Connection failed', stateIdle: 'Not connected',
@@ -400,7 +479,21 @@ const en: Strings = {
   credits: 'Credits', creditsDesc: 'Bluetooth protocol parsing and body-composition algorithms are ported from these open-source projects:',
   creditsLicense: 'All projects are MIT licensed. This app follows the same open-source spirit.',
   language: 'Language', languageHint: 'Follow the system language or pick one manually', followSystem: 'Follow system',
- macFormat: 'Invalid MAC format (XX:XX:XX:XX:XX:XX)', saved: 'Saved:', saveFail: 'Save failed', selectFirst: 'Select records to push first',
+ unitSection2: 'Unit', unitDisplayHint: 'Display & send unit (database always stores kg)', unitKg: 'kg (kilogram)', unitLb: 'lb (pound)', unitJin: 'jin (Chinese pound)',
+profileTitle: 'Body Data', profileHint: 'Required for body-fat calculation (sex / age / height)', profileRequired: 'Please fill in all fields to start', profileSave: 'Save & Start',
+sexLabel: 'Sex', sexMale: 'Male', sexFemale: 'Female',
+ageLabel: 'Age', heightLabel: 'Height (cm)', saving: 'Saving…',
+appTagline: 'Body Composition Scale',
+historySynced: 'Imported {n} history records from the scale', impedanceFailed: 'No impedance measured this time', macFormat: 'Invalid MAC format (XX:XX:XX:XX:XX:XX)', saved: 'Saved:', saveFail: 'Save failed', selectFirst: 'Select records to push first',
+pendingTitle: 'Unassigned History', pendingHint: 'Measurements imported from the scale — choose who they belong to', pendingEmpty: 'No pending records', pendingEmptyHint: 'New scale measurements will appear here',
+assignTo: 'Assign to', discardSelected: 'Discard selected', selectAll: 'Select all', deselectAll: 'Deselect all',
+phaseWeighing: 'Weighing', phaseImpedance: 'Measuring impedance', phaseDone: 'Complete',
+batteryLabel: 'Battery', firmwareLabel: 'Firmware', manufacturerLabel: 'Manufacturer', modelLabel: 'Model',
+pendingEntry: 'Pending history', transferTo: 'Transfer to', transferHint: 'Assign selected records to whom? (body composition will need remeasuring)',
+optional: '(optional)',
+nameLabel: 'Name', namePlaceholder: 'e.g. Me',
+profilesTitle: 'User Profiles', profilesHint: 'Body data sent to the scale — pick who connects', addProfile: 'Add user', editProfile: 'Edit',
+activeProfileLabel: 'User for scale connection', weightLabel: 'Weight (kg)', lowWeightTag: 'Light step?',
 
   connecting: 'Connecting…', testing: 'Testing…', pulling: 'Pulling…',
   connOk: 'Connection OK', connFail: 'Connection failed', pushOk: 'Pushed successfully', pushFail: 'Push failed',

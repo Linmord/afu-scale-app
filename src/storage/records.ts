@@ -23,6 +23,12 @@ export interface MeasurementRecord {
 }
 
 const UNITS_KEY_FILE = 'units.json';
+
+/** 本地时间字符串（YYYY-MM-DD HH:MM:SS）——必须用本地时区，不能用 toISOString（UTC） */
+export function localTimeString(d: Date = new Date()): string {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0')
+    + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ':' + String(d.getSeconds()).padStart(2,'0');
+}
 export const DEFAULT_UNIT = '小林';
 
 function dataDir(): Directory {
@@ -95,8 +101,10 @@ export async function importHistoryEvents(
   const timeKeys = new Set(list.map((r) => r.time));
   let added = 0;
   let skipped = 0;
+  const MIN_VALID_KG = 30;   // 成人体重下限：低于此值多为轻踩/单脚的无效记录
   for (const ev of events) {
     if (!ev.time || ev.weight_kg === null || ev.weight_kg <= 0) { skipped++; continue; }
+    if (ev.weight_kg < MIN_VALID_KG) { skipped++; continue; }   // 丢弃轻踩垃圾数据
     const d = new Date(ev.time * 1000);
     const time = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0')
       + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ':' + String(d.getSeconds()).padStart(2,'0');
@@ -107,8 +115,8 @@ export async function importHistoryEvents(
       time,
       unit,
       weight_kg: ev.weight_kg,
-      impedance_1: ev.adcs[0] ?? null,
-      impedance_2: ev.adcs[1] ?? null,
+      impedance_1: (ev.adcs[0] ?? 0) > 0 ? ev.adcs[0] : null,
+      impedance_2: (ev.adcs[1] ?? 0) > 0 ? ev.adcs[1] : null,
       adcs: ev.adcs,
       electrode_on: ev.adcs.some((v) => v > 0),
       body_composition: null,   // 历史补录的体脂由 UI 按需估算，不在此强算
@@ -124,7 +132,7 @@ export async function importHistoryEvents(
 export async function mergeRemoteRecords(remote: MeasurementRecord[], remoteStamp?: string): Promise<{ added: number; marked: number; list: MeasurementRecord[] }> {
   const local = await readRecords();
   const localIds = new Set(local.map((r) => r.id));
-  const stamp = remoteStamp || new Date().toISOString().slice(0, 19).replace('T', ' ');
+  const stamp = remoteStamp || localTimeString();
   let added = 0;
   let marked = 0;
 
@@ -148,13 +156,64 @@ export async function mergeRemoteRecords(remote: MeasurementRecord[], remoteStam
 /** 把指定 id 标记为已推送 */
 export async function markRecordsSynced(ids: string[], when?: string): Promise<MeasurementRecord[]> {
   const list = await readRecords();
-  const stamp = when || new Date().toISOString().slice(0, 19).replace('T', ' ');
+  const stamp = when || localTimeString();
   let changed = false;
   for (const r of list) {
     if (ids.includes(r.id) && !r.syncedAt) { r.syncedAt = stamp; changed = true; }
   }
   if (changed) await writeRecords(list);
   return list;
+}
+
+export async function deleteRecords(ids: string[]): Promise<MeasurementRecord[]> {
+  const set = new Set(ids);
+  const list = await readRecords();
+  const next = list.filter((r) => !set.has(r.id));
+  if (next.length !== list.length) await writeRecords(next);
+  return next;
+}
+
+/** 把记录转移给其他所有者（同时更新记录里的 profile 为当前用户档案） */
+export async function transferRecords(
+  ids: string[],
+  newUnit: string,
+  profile: { sex: string; age: number; height: number },
+): Promise<MeasurementRecord[]> {
+  const set = new Set(ids);
+  const list = await readRecords();
+  let changed = false;
+  for (const r of list) {
+    if (set.has(r.id)) {
+      r.unit = newUnit;
+      r.profile = { ...profile };
+      // 转移所有者后体成分应重算，这里清空避免沿用旧主人的 BIA 结果
+      r.body_composition = null;
+      changed = true;
+    }
+  }
+  if (changed) await writeRecords(list);
+  return list;
+}
+
+/**
+ * 按每条记录自身的 profile（性别/年龄/身高）重新计算体脂。
+ * 用于修正早期用错公式/错性别的旧记录。calc 由调用方注入，避免 storage 依赖 protocol。
+ */
+export async function recalcBodyComposition(
+  calc: (r: MeasurementRecord) => Record<string, unknown> | null,
+): Promise<number> {
+  const list = await readRecords();
+  let changed = 0;
+  for (const r of list) {
+    const next = calc(r);
+    const before = JSON.stringify(r.body_composition);
+    if (JSON.stringify(next) !== before) {
+      r.body_composition = next;
+      changed++;
+    }
+  }
+  if (changed > 0) await writeRecords(list);
+  return changed;
 }
 
 export async function getRecordCount(): Promise<number> {

@@ -45,12 +45,15 @@ function asInt(v: unknown, def?: number): number | undefined {
   return Number.isFinite(n) ? n : def;
 }
 
+/** 从阻抗数组得到用于 BIA 的单一电阻抗值。
+   *  实测逆向（蚂蚁体脂秤）：锁定包给的两个 ADC 值需合成 (a+b)×0.675 才是蚂蚁 BIA 用的欧姆值。
+   *  例 [403,364]→517Ω→女性体脂37.8%，与蚂蚁屏幕完全一致。 */
 function firstResistance(impendences: number[] | null | undefined): number | null {
-  if (!impendences) return null;
-  for (const v of impendences) {
-    if (v >= 100.0 && v <= 1500.0) return v;
-  }
-  return null;
+  if (!impendences || impendences.length === 0) return null;
+  const valid = impendences.filter((v) => typeof v === 'number' && v > 0 && Number.isFinite(v));
+  if (valid.length === 0) return null;
+  if (valid.length >= 2) return Math.round((valid[0] + valid[1]) * 0.675 * 100) / 100;
+  return valid[0] >= 100 && valid[0] <= 1500 ? valid[0] : null;
 }
 
 function segalFfm(weight: number, height: number, age: number, sex: string, res: number): { ffm: number; model: string } {
@@ -88,30 +91,41 @@ export function estimateBodyComposition(
   let baseBfp: number;
   let model: string;
   let ffm: number;
-  if (res !== null) {
+  const bmi = weight / ((height / 100.0) ** 2);
+  const male = isMale(sexStr);
+
+  if (male) {
+    // 男性：Deurenberg 日本版系数 1.10（蚂蚁实测 79.8kg/168/24 -> 25.4%）
+    baseBfp = 1.10 * bmi + 0.23 * ageInt - 11.22;
+    ffm = weight * (1.0 - baseBfp / 100.0);
+    model = 'deurenberg_jp_male';
+  } else if (res !== null && res >= 100 && res <= 1500) {
+    // 女性：Segal + 合成阻抗 (i1+i2)*0.675（蚂蚁实测命中 37.7%）
     const r = segalFfm(weight, height, ageInt, sexStr, res);
     ffm = clamp(r.ffm, weight * 0.35, weight * 0.97);
     model = r.model;
     baseBfp = 100.0 * (weight - ffm) / weight;
   } else {
-    const bmi = weight / ((height / 100.0) ** 2);
-    const sv = isMale(sexStr) ? 1 : 0;
-    baseBfp = 1.20 * bmi + 0.23 * ageInt - 10.8 * sv - 5.4;
+    baseBfp = 1.10 * bmi + 0.23 * ageInt - 5.4;
     ffm = weight * (1.0 - baseBfp / 100.0);
-    model = 'deurenberg_bmi_fallback';
+    model = 'deurenberg_jp_female';
   }
-
   const bodyFatPercent = clamp(baseBfp, isMale(sexStr) ? 3.0 : 8.0, 60.0);
   const fatMass = pctMass(weight, bodyFatPercent);
   const fatFreeMass = weight - fatMass;
   const bonePercent = isMale(sexStr) ? 4.5 : 4.0;
   const musclePercent = clamp(100.0 - bodyFatPercent - bonePercent, 20.0, 95.0);
   const leanPercent = 100.0 - bodyFatPercent;
-  const waterPercent = clamp(leanPercent * 0.70, 25.0, 80.0);
-  const proteinPercent = clamp(leanPercent * 0.238, 5.0, 35.0);
-  const skeletalPercent = clamp(musclePercent * 0.527, 10.0, 70.0);
-  const subcutaneousPercent = clamp(bodyFatPercent * 0.72, 1.0, bodyFatPercent);
-
+  // 派生指标按蚂蚁实测分性别校准
+  const waterCoef = male ? 0.7185 : 0.8475;
+  const waterPercent = clamp(leanPercent * waterCoef, 25.0, 80.0);
+  const skeletalCoef = male ? 0.548 : 0.651;
+  const skeletalPercent = clamp(musclePercent * skeletalCoef, 10.0, 70.0);
+  const subcutaneousCoef = male ? 0.7165 : 0.72;
+  const subcutaneousPercent = clamp(bodyFatPercent * subcutaneousCoef, 1.0, bodyFatPercent);
+  // 蛋白质量：女性≈体重×5%，男性≈体重×16.3%（蚂蚁实测）
+  const proteinMassKg = weight * (male ? 0.163 : 0.05);
+  const proteinPercent = Math.round((proteinMassKg / weight) * 1000) / 10;
   return {
     model,
     resistance_ohm: res !== null ? Math.round(res * 100) / 100 : null,
@@ -123,7 +137,7 @@ export function estimateBodyComposition(
     water_percent: Math.round(waterPercent * 10) / 10,
     water_mass_kg: Math.round(pctMass(weight, waterPercent) * 10) / 10,
     protein_percent: Math.round(proteinPercent * 10) / 10,
-    protein_mass_kg: Math.round(pctMass(weight, proteinPercent) * 10) / 10,
+    protein_mass_kg: Math.round(proteinMassKg * 10) / 10,
     bone_percent: Math.round(bonePercent * 10) / 10,
     bone_mass_kg: Math.round(pctMass(weight, bonePercent) * 10) / 10,
     skeletal_muscle_percent: Math.round(skeletalPercent * 10) / 10,

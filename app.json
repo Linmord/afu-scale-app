@@ -38,7 +38,8 @@
           }
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "./plugins/removeNeverForLocation.js"
     ],
     "newArchEnabled": true
   }
